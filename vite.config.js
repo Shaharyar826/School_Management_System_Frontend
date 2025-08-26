@@ -83,15 +83,13 @@ export default defineConfig(({ mode }) => {
       },
       allowedHosts,
     },
+    esbuild: {
+      drop: isProduction ? ['console', 'debugger'] : []
+    },
+
     build: {
       // Production optimizations
-      minify: isProduction ? 'terser' : false,
-      terserOptions: {
-        compress: {
-          drop_console: isProduction,
-          drop_debugger: isProduction,
-        },
-      },
+      minify: isProduction ? 'esbuild' : false,
       rollupOptions: {
         output: {
           manualChunks: {
