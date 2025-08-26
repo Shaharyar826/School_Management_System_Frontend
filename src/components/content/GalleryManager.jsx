@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
 import { getGalleryImages, deleteGalleryImage } from '../../services/galleryApi';
 import LoadingSpinner from '../common/LoadingSpinner';
-import GalleryManagerModal from '../gallery/GalleryManagerModal';
+import GalleryManagerModal from '../Gallery/GalleryManagerModal';
 import CloudinaryImage from '../common/CloudinaryImage';
 
 // Helper function to toggle modal class on body
