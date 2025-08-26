@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ProfileAvatarImage from '../components/common/ProfileAvatarImage';
-import TeacherSearch from '../components/admin/TeacherSearch';
+// import TeacherSearch from '../components/admin/TeacherSearch';
 
 const TeachersPage = () => {
   const { user } = useContext(AuthContext);
@@ -49,7 +49,7 @@ const TeachersPage = () => {
           )}
         </div>
 
-        <TeacherSearch />
+        {/* <TeacherSearch /> */}
 
         {error && (
           <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4">
