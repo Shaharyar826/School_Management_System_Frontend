@@ -362,7 +362,7 @@ const ProcessFeePayment = () => {
                     placeholder="Auto-calculated based on attendance"
                   />
                   <div className="mt-1 text-xs text-gray-500">
-                    Rule: Fine of ₹500 if absences > 3 days
+                    Rule: Fine of ₹500 if absences &gt; 3 days
                   </div>
                 </div>
 
