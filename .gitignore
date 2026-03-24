@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment — NEVER commit real secrets
+.env
+.env.*
+!.env.production
+
+# Dev-only CSS
+src/debug.css
+
+# Tunnel / dev-only tools
+.ngrok-config.json
+.tunnel-url
+ngrok.js
+localtunnel.js
+local-network.js
+static-server.js
+share-link.html
+src/ngrok-domain.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.local
