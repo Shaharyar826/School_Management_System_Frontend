@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import ComplaintModal from '../common/ComplaintModal';
 
 const ParentDashboard = () => {
+  const [showComplaint, setShowComplaint] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['parentDashboard'],
     queryFn: async () => {
@@ -22,13 +25,23 @@ const ParentDashboard = () => {
   const { parent, children } = data || {};
 
   return (
-    <div className="py-6">
+    <>
+      <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Parent Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome, {parent?.name}! View your children's academic progress and information.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Parent Dashboard</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Welcome, {parent?.name}! View your children's academic progress and information.
+              </p>
+            </div>
+            <button onClick={() => setShowComplaint(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-pink-200 text-sm font-medium rounded-md text-pink-600 bg-pink-50 hover:bg-pink-100">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              File Complaint
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -91,6 +104,8 @@ const ParentDashboard = () => {
         )}
       </div>
     </div>
+    {showComplaint && <ComplaintModal onClose={() => setShowComplaint(false)} />}
+    </>
   );
 };
 

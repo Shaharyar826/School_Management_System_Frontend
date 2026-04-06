@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import NoticeList from '../notices/NoticeList';
+import ComplaintModal from '../common/ComplaintModal';
 
 const TeacherDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -16,6 +17,7 @@ const TeacherDashboard = () => {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showComplaint, setShowComplaint] = useState(false);
 
   useEffect(() => {
     // Fetch teacher data and class-specific information
@@ -102,9 +104,17 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <div className="py-6">
+    <>
+      <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-semibold text-gray-900">Teacher Dashboard</h1>
+        <div className="mt-2 flex justify-end">
+          <button onClick={() => setShowComplaint(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 border border-pink-200 text-sm font-medium rounded-md text-pink-600 bg-pink-50 hover:bg-pink-100">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            File Complaint
+          </button>
+        </div>
 
         {/* Welcome message */}
         <div className="mt-4 bg-white shadow rounded-lg p-6">
@@ -378,6 +388,8 @@ const TeacherDashboard = () => {
         </div>
       </div>
     </div>
+    {showComplaint && <ComplaintModal onClose={() => setShowComplaint(false)} />}
+    </>
   );
 };
 

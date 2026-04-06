@@ -5,6 +5,7 @@ import AuthLogin from './components/auth/AuthLogin'
 import TenantLogin from './components/auth/TenantLogin'
 import ForgotPassword from './components/auth/ForgotPassword'
 import TempPasswordReset from './components/auth/TempPasswordReset'
+import ResetPassword from './components/auth/ResetPassword'
 import Dashboard from './components/dashboard/Dashboard'
 import PrivateRoute from './components/routing/PrivateRoute'
 import AuthenticatedRoute from './components/routing/AuthenticatedRoute'
@@ -22,6 +23,7 @@ import { StripeProvider } from './context/StripeContext'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import EduFlowLanding from './components/saas/EduFlowLanding'
+import PublicLayout from './components/public/PublicLayout'
 import TenantRegistration from './components/auth/TenantRegistration'
 import EmailVerification from './components/auth/EmailVerification'
 import PricingPage from './components/saas/PricingPage'
@@ -35,6 +37,7 @@ import PrivacyPage from './pages/public/PrivacyPage'
 import TermsPage from './pages/public/TermsPage'
 import PricingCalculator from './components/billing/PricingCalculator'
 import SchoolSetupDashboard from './components/onboarding/SchoolSetupDashboard'
+import TrialExpiredPage from './pages/auth/TrialExpiredPage'
 import SuperAdminLogin from './components/super-admin/SuperAdminLogin'
 import SuperAdminDashboard from './components/super-admin/SuperAdminDashboard'
 import SuperAdminTenants from './components/super-admin/SuperAdminTenants'
@@ -44,6 +47,8 @@ import SuperAdminBilling from './components/super-admin/SuperAdminBilling'
 import SuperAdminAnalytics from './components/super-admin/SuperAdminAnalytics'
 import SuperAdminSettings from './components/super-admin/SuperAdminSettings'
 import SuperAdminUsers from './components/super-admin/SuperAdminUsers'
+import SuperAdminComplaints from './components/super-admin/SuperAdminComplaints'
+import SuperAdminContacts from './components/super-admin/SuperAdminContacts'
 
 // Lazy load subscription pages
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))
@@ -173,9 +178,9 @@ function App() {
           <Route path="/old" element={<EduFlowLanding />} />
           <Route path="/signup" element={<TenantRegistration />} />
           <Route path="/verify-email" element={<EmailVerification />} />
-          <Route path="/pricing-calculator" element={<PricingPage />} />
-          <Route path="/calculator" element={<PricingCalculator />} />
-          <Route path="/home" element={<LandingPage />} />
+          <Route path="/pricing-calculator" element={<PublicLayout><PricingPage /></PublicLayout>} />
+          <Route path="/calculator" element={<PublicLayout><PricingCalculator /></PublicLayout>} />
+          <Route path="/home" element={<PublicLayout><LandingPage /></PublicLayout>} />
           
           {/* Super Admin Portal */}
           <Route path="/super-admin/login" element={<SuperAdminLogin />} />
@@ -219,39 +224,60 @@ function App() {
               <SuperAdminUsers />
             </SuperAdminRoute>
           } />
+          <Route path="/super-admin/complaints" element={
+            <SuperAdminRoute>
+              <SuperAdminComplaints />
+            </SuperAdminRoute>
+          } />
+          <Route path="/super-admin/contacts" element={
+            <SuperAdminRoute>
+              <SuperAdminContacts />
+            </SuperAdminRoute>
+          } />
           <Route path="/super-admin" element={<SuperAdminLogin />} />
         <Route path="/login" element={<AuthLogin />} />
         <Route path="/tenant-login" element={<TenantLogin />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/reset-temp-password" element={
           <PrivateRoute>
             <TempPasswordReset />
           </PrivateRoute>
         } />
         <Route path="/admissions" element={
+          <PublicLayout>
           <Suspense fallback={<LoadingSpinner />}>
             <AdmissionsPage />
           </Suspense>
+          </PublicLayout>
         } />
         <Route path="/academics" element={
+          <PublicLayout>
           <Suspense fallback={<LoadingSpinner />}>
             <AcademicsPage />
           </Suspense>
+          </PublicLayout>
         } />
         <Route path="/faculty" element={
+          <PublicLayout>
           <Suspense fallback={<LoadingSpinner />}>
             <FacultyPage />
           </Suspense>
+          </PublicLayout>
         } />
         <Route path="/events" element={
+          <PublicLayout>
           <Suspense fallback={<LoadingSpinner />}>
             <EventsPage />
           </Suspense>
+          </PublicLayout>
         } />
         <Route path="/gallery" element={
+          <PublicLayout>
           <Suspense fallback={<LoadingSpinner />}>
             <GalleryPage />
           </Suspense>
+          </PublicLayout>
         } />
         {/* <Route path="/public-button-test" element={
           <Suspense fallback={<LoadingSpinner />}>
@@ -269,9 +295,18 @@ function App() {
         {/* Protected Routes */}
         <Route path="/setup" element={
           <PrivateRoute>
+            <PublicLayout>
             <Suspense fallback={<LoadingSpinner />}>
               <SchoolSetupDashboard />
             </Suspense>
+            </PublicLayout>
+          </PrivateRoute>
+        } />
+
+        {/* Trial expired — only shown when trial is over and no payment method */}
+        <Route path="/billing" element={
+          <PrivateRoute>
+            <TrialExpiredPage />
           </PrivateRoute>
         } />
 

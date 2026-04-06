@@ -1,7 +1,6 @@
 import axios from '../config/axios';
 
 class StripeService {
-  // Get Stripe configuration
   async getConfig() {
     try {
       const response = await axios.get('/api/stripe/config');
@@ -11,89 +10,38 @@ class StripeService {
     }
   }
 
-  // Create checkout session
-  async createCheckoutSession(plan, successUrl, cancelUrl) {
-    try {
-      const response = await axios.post('/api/stripe/create-checkout-session', {
-        plan,
-        successUrl,
-        cancelUrl
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-
-  // Create billing portal session
-  async createPortalSession(returnUrl) {
-    try {
-      const response = await axios.post('/api/stripe/create-portal-session', {
-        returnUrl
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-
-  // Get subscription status
-  async getSubscriptionStatus() {
-    try {
-      const response = await axios.get('/api/subscription/status');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-
-  // Get pricing plans
   async getPricingPlans() {
     try {
-      const response = await axios.get('/api/subscription/plans');
+      const response = await axios.get('/api/stripe/plans');
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   }
 
-  // Create subscription
-  async createSubscription(plan) {
+  async getSubscriptionStatus() {
     try {
-      const response = await axios.post('/api/subscription/create', { plan });
+      const response = await axios.get('/api/stripe/subscription');
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   }
 
-  // Upgrade subscription
-  async upgradeSubscription(plan) {
+  async createCheckoutSession(plan, interval = 'month', successUrl, cancelUrl) {
     try {
-      const response = await axios.post('/api/subscription/upgrade', { plan });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-
-  // Cancel subscription
-  async cancelSubscription() {
-    try {
-      const response = await axios.post('/api/subscription/cancel');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-
-  // Create payment intent
-  async createPaymentIntent(amount, currency = 'usd') {
-    try {
-      const response = await axios.post('/api/subscription/payment-intent', {
-        amount,
-        currency
+      const response = await axios.post('/api/stripe/create-checkout-session', {
+        plan, interval, successUrl, cancelUrl,
       });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  }
+
+  async createPortalSession(returnUrl) {
+    try {
+      const response = await axios.post('/api/stripe/create-portal-session', { returnUrl });
       return response.data;
     } catch (error) {
       throw error.response?.data || error;

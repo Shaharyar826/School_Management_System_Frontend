@@ -111,23 +111,35 @@ const EditStudent = () => {
     fetchStudent();
   }, [id]);
 
+  const getTenantEmailDomain = () => {
+    const hostname = window.location.hostname.toLowerCase().trim();
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      const tenant = localStorage.getItem('tenant')?.trim().toLowerCase();
+      return tenant || hostname || 'localhost';
+    }
+
+    return hostname;
+  };
+
   // Function to generate email from name
   const generateEmailFromName = (fullName) => {
     if (!fullName) return '';
 
-    // Split the name and take first and last parts
-    const nameParts = fullName.trim().split(' ');
+    // Split the name and take first and second parts
+    const nameParts = fullName.trim().split(' ').filter(Boolean);
     if (nameParts.length < 2) return '';
 
     const firstName = nameParts[0];
-    const lastName = nameParts[nameParts.length - 1];
+    const secondName = nameParts[1];
 
     // Convert to lowercase and remove spaces and special characters
     const cleanFirstName = firstName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanLastName = lastName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanSecondName = secondName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const domain = getTenantEmailDomain();
 
-    // Create email in format std[firstname][lastname]@schoolms.com
-    return `std${cleanFirstName}${cleanLastName}@schoolms.com`;
+    // Create email in format std[firstname][middlename]@tenantDomain
+    return `std${cleanFirstName}${cleanSecondName}@${domain}.com`;
   };
 
   const handleUserChange = (e) => {
@@ -140,7 +152,7 @@ const EditStudent = () => {
     };
 
     // If name is changed and it's a student email format, auto-generate email
-    if (name === 'name' && value && userData.email && userData.email.startsWith('std') && userData.email.endsWith('@schoolms.com')) {
+    if (name === 'name' && value && userData.email && userData.email.startsWith('std')) {
       const generatedEmail = generateEmailFromName(value);
       if (generatedEmail) {
         updatedUserData.email = generatedEmail;
@@ -276,8 +288,8 @@ const EditStudent = () => {
                       value={userData.email}
                       onChange={handleUserChange}
                       required
-                      readOnly={userData.email && userData.email.startsWith('std') && userData.email.endsWith('@schoolms.com')}
-                      className={userData.email && userData.email.startsWith('std') && userData.email.endsWith('@schoolms.com') ? "bg-gray-100" : ""}
+                      readOnly={userData.email && userData.email.startsWith('std')}
+                      className={userData.email && userData.email.startsWith('std') ? "bg-gray-100" : ""}
                     />
                     {emailGenerated && (
                       <div className="absolute right-0 top-0 mt-2 mr-2 text-green-500">
@@ -286,7 +298,7 @@ const EditStudent = () => {
                         </svg>
                       </div>
                     )}
-                    {userData.email && userData.email.startsWith('std') && userData.email.endsWith('@schoolms.com') && (
+                    {userData.email && userData.email.startsWith('std') && (
                       <p className="mt-1 text-xs text-gray-500">Email is auto-generated based on student's name</p>
                     )}
                   </div>

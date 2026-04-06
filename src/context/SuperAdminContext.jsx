@@ -16,10 +16,10 @@ export const SuperAdminProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.get('/api/super-admin/auth/me', {
+      const response = await axios.get('/api/super-admin/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSuperAdmin(response.data.superAdmin);
+      setSuperAdmin(response.data.data);
       setIsAuthenticated(true);
     } catch (error) {
       localStorage.removeItem('superAdminToken');
@@ -35,12 +35,12 @@ export const SuperAdminProvider = ({ children }) => {
   }, [checkAuth]);
 
   const login = async (email, password) => {
-    const response = await axios.post('/api/super-admin/auth/login', {
+    const response = await axios.post('/api/super-admin/login', {
       email,
       password
     });
-    
-    const { token, superAdmin: adminData } = response.data;
+
+    const { token, data: adminData } = response.data;
     localStorage.setItem('superAdminToken', token);
     setSuperAdmin(adminData);
     setIsAuthenticated(true);
@@ -55,6 +55,7 @@ export const SuperAdminProvider = ({ children }) => {
 
   const value = {
     superAdmin,
+    token: localStorage.getItem('superAdminToken'),
     isAuthenticated,
     loading,
     login,

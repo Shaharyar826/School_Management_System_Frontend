@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useStripe } from '../context/StripeContext';
+import { useSetup } from '../context/SetupContext';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Button from '../components/common/Button';
@@ -9,6 +10,7 @@ const SubscriptionSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { refreshSubscription } = useStripe();
+  const { refresh: refreshSetup } = useSetup();
   const [loading, setLoading] = useState(true);
   const sessionId = searchParams.get('session_id');
 
@@ -16,24 +18,23 @@ const SubscriptionSuccessPage = () => {
     const handleSuccess = async () => {
       try {
         if (sessionId) {
-          // Wait for Stripe webhook to process before refreshing
-          setTimeout(async () => {
-            await refreshSubscription();
-            setLoading(false);
-            toast.success('Subscription activated successfully!');
-          }, 3000);
-        } else {
-          setLoading(false);
-          toast.success('Payment completed successfully!');
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
-      } catch {
-        setLoading(false);
+
+        await refreshSubscription();
+        await refreshSetup();
+        toast.success('Subscription activated successfully!');
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Subscription refresh error:', error);
         toast.error('There was an issue processing your subscription');
+      } finally {
+        setLoading(false);
       }
     };
 
     handleSuccess();
-  }, [sessionId, refreshSubscription]);
+  }, [sessionId, refreshSubscription, refreshSetup, navigate]);
 
   if (loading) {
     return (
@@ -62,7 +63,7 @@ const SubscriptionSuccessPage = () => {
         </div>
 
         <div className="space-y-4">
-          <Button onClick={() => navigate('/subscription')} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={() => navigate('/dashboard')} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
             Continue to Dashboard
           </Button>
           <p className="text-sm text-gray-500">

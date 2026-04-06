@@ -134,7 +134,7 @@ const AdminStaffPage = () => {
 
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900">Administrative Staff Management</h1>
-          {user && (user.role === 'admin' || user.role === 'principal') && (
+          {user && ['admin', 'principal', 'tenant_system_admin'].includes(user.role) && (
             <Link
               to="/admin-staff/add"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

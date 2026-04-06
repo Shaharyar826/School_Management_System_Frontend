@@ -33,7 +33,7 @@ export const TenantConfigProvider = ({ children }) => {
         return hostname; // custom domain
       }
     } else if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('localhost:') || hostname.startsWith('127.0.0.1:')) {
-      return new URLSearchParams(window.location.search).get('tenant') || 'cbhstj';
+      return new URLSearchParams(window.location.search).get('tenant') || localStorage.getItem('tenant') || 'cbhstj';
     }
     return null;
   }, []);
@@ -48,26 +48,25 @@ export const TenantConfigProvider = ({ children }) => {
         headers['X-Tenant'] = tenantIdentifier;
       }
       
-      const response = await axios.get('/api/onboarding/status', { headers });
+      const response = await axios.get('/api/school-settings', { headers });
       
       if (response.data.success) {
-        const tenantData = response.data.data.tenant;
+        const tenantData = response.data.data || {};
+        const tenant = localStorage.getItem('tenant');
         const newConfig = {
           schoolName: tenantData.schoolName || 'School Management System',
-          subdomain: tenantData.subdomain,
-          features: tenantData.settings?.features?.enabled || DEFAULT_FEATURES,
+          subdomain: tenant || tenantData.subdomain,
+          features: DEFAULT_FEATURES,
           branding: {
-            logo: tenantData.settings?.branding?.logo || null,
-            primaryColor: tenantData.settings?.branding?.primaryColor || '#3B82F6',
-            secondaryColor: tenantData.settings?.branding?.secondaryColor || '#1E40AF',
-            theme: tenantData.settings?.branding?.theme || 'light'
+            logo: tenantData.logo || null,
+            primaryColor: tenantData.primaryColor || '#3B82F6',
+            secondaryColor: '#1E40AF',
+            theme: 'light'
           },
-          status: tenantData.status || 'trial',
+          status: 'active',
           loading: false,
           error: null
         };
-        
-        // Cache config in localStorage
         localStorage.setItem('tenant_config', JSON.stringify(newConfig));
         setConfig(newConfig);
       }

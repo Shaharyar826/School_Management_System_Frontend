@@ -1,48 +1,131 @@
+/* ===== Google Fonts — Inter ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ====================================================
+   CSS DESIGN TOKENS — SaaS Brand System
+   ==================================================== */
+:root {
+  /* Brand Colors */
+  --brand-50:  #FFF0F8;
+  --brand-100: #FFD6F0;
+  --brand-200: #FFB3E3;
+  --brand-300: #FF80CF;
+  --brand-400: #FF4DBB;
+  --brand-500: #E91E8C;   /* PRIMARY */
+  --brand-600: #CC1A7C;
+  --brand-700: #A81568;
+  --brand: var(--brand-500);
+
+  /* Accent Purple */
+  --accent-500: #9333EA;
+  --accent: var(--accent-500);
+
+  /* Gradient */
+  --gradient-brand: linear-gradient(135deg, #E91E8C 0%, #9333EA 100%);
+  --gradient-brand-h: linear-gradient(90deg, #E91E8C 0%, #9333EA 100%);
+  --gradient-hero: linear-gradient(135deg, #FFF0F8 0%, #F5F0FF 60%, #FAFAFA 100%);
+  --gradient-sidebar: linear-gradient(180deg, #111827 0%, #0D1117 100%);
+
+  /* Backgrounds */
+  --bg-base: #FAFAFA;
+  --bg-card: #FFFFFF;
+  --bg-muted: #F3F4F6;
+  --bg-sidebar: #111827;
+
+  /* Typography */
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --text-inverse: #FFFFFF;
+
+  /* Borders */
+  --border-default: #E5E7EB;
+  --border-subtle: #F3F4F6;
+  --border-brand: #E91E8C;
+
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(233,30,140,0.06);
+  --shadow-card-hover: 0 4px 24px rgba(233,30,140,0.14);
+  --shadow-brand: 0 4px 24px rgba(233,30,140,0.28);
+  --shadow-dropdown: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 1px 0 rgba(0,0,0,0.06);
+  --shadow-input-focus: 0 0 0 3px rgba(233,30,140,0.18);
+
+  /* Transitions */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ====================================================
+   BASE LAYER
+   ==================================================== */
 @layer base {
-  :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 min-h-screen;
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
   }
 
-  /* Respect reduced motion globally */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-primary);
+  }
+
+  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
   }
+
   /* Modal styles */
   body.modal-open {
     overflow: hidden;
     touch-action: none;
+  }
+
+  body.modal-open > *:not(.modal-portal-container) {
     pointer-events: none;
   }
 
   .modal-portal-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 99999;
     pointer-events: none;
   }
 
   .modal-portal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 99999;
     pointer-events: auto;
   }
@@ -53,3 +136,4 @@
     pointer-events: auto;
   }
 }
+

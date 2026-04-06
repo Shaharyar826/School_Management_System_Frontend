@@ -5,446 +5,344 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(null);
-  const [refreshToken, setRefreshToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
 
-  // Get tenant identifier from URL
-  const getTenantIdentifier = useCallback(() => {
-    const hostname = window.location.hostname;
-    if (hostname.includes('.') && !hostname.includes('localhost')) {
-      const parts = hostname.split('.');
-      return parts.length >= 3 ? parts[0] : hostname;
-    }
-    return new URLSearchParams(window.location.search).get('tenant') || 'demo';
+  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+  const ACTIVITY_KEY = 'ba_last_activity';
+
+  const getStoredActivity = useCallback(() => {
+    const stored = window.sessionStorage.getItem(ACTIVITY_KEY) || localStorage.getItem(ACTIVITY_KEY);
+    return stored ? parseInt(stored, 10) : null;
   }, []);
 
-  // Set axios defaults with enhanced security
-  useEffect(() => {
-    if (accessToken) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
+  const setStoredActivity = useCallback((timestamp = Date.now()) => {
+    const value = String(timestamp);
+    try {
+      window.sessionStorage.setItem(ACTIVITY_KEY, value);
+    } catch (error) {
+      // Ignore storage failures in private mode
     }
-    
-    // Add tenant header
-    const tenantIdentifier = getTenantIdentifier();
-    if (tenantIdentifier) {
-      axios.defaults.headers.common['X-Tenant'] = tenantIdentifier;
+    try {
+      localStorage.setItem(ACTIVITY_KEY, value);
+    } catch (error) {
+      // Ignore storage failures in private mode
     }
-  }, [accessToken, getTenantIdentifier]);
+    return timestamp;
+  }, []);
 
-  // Axios interceptor for token refresh
+  const clearStoredActivity = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(ACTIVITY_KEY);
+    } catch (error) {
+      // Ignore storage failures
+    }
+    try {
+      localStorage.removeItem(ACTIVITY_KEY);
+    } catch (error) {
+      // Ignore storage failures
+    }
+  }, []);
+
+  const isSessionExpired = useCallback(() => {
+    const lastActivity = getStoredActivity();
+    return lastActivity ? (Date.now() - lastActivity) > INACTIVITY_TIMEOUT_MS : false;
+  }, [getStoredActivity]);
+
+  const updateLastActivity = useCallback(() => {
+    if (!isAuthenticated) return;
+    setStoredActivity();
+  }, [isAuthenticated, setStoredActivity]);
+
+  // Set token in axios headers — token is managed via httpOnly cookie by Better Auth.
+  // We no longer store it in localStorage to prevent XSS token theft.
+
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        
-        if (error.response?.status === 401 && 
-            error.response?.data?.code === 'TOKEN_EXPIRED' && 
-            !originalRequest._retry) {
-          originalRequest._retry = true;
-          
-          try {
-            const refreshResult = await refreshAccessToken();
-            if (refreshResult.success) {
-              originalRequest.headers['Authorization'] = `Bearer ${refreshResult.accessToken}`;
-              return axios(originalRequest);
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-            await logout();
-            return Promise.reject(refreshError);
-          }
+    if (!isAuthenticated) return;
+
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        setStoredActivity();
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => {
+        setStoredActivity();
+        return response;
+      },
+      (error) => {
+        if (error.response?.status !== 401) {
+          setStoredActivity();
         }
-        
         return Promise.reject(error);
       }
     );
 
     return () => {
-      axios.interceptors.response.eject(interceptor);
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
     };
-  }, []);
+  }, [isAuthenticated, setStoredActivity]);
 
-  // Refresh access token
-  const refreshAccessToken = useCallback(async () => {
-    try {
-      const res = await axios.post('/api/auth/refresh', {}, {
-        withCredentials: true
-      });
-      
-      if (res.data.success) {
-        setAccessToken(res.data.accessToken);
-        return {
-          success: true,
-          accessToken: res.data.accessToken
-        };
-      }
-      
-      throw new Error('Token refresh failed');
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      return { success: false, error: error.message };
-    }
-  }, []);
-
-  // Load user with enhanced error handling
+  // Load current user
   const loadUser = useCallback(async () => {
+    const savedTenant = localStorage.getItem('tenant');
+    const savedToken  = localStorage.getItem('ba_token');
+
+    // If the current session has been idle too long, expire it immediately.
+    if (isSessionExpired()) {
+      clearStoredActivity();
+      setLoading(false);
+      setUser(null);
+      setIsAuthenticated(false);
+      window.location.href = '/';
+      return;
+    }
+
     try {
-      const tenantIdentifier = getTenantIdentifier();
-      
-      const res = await axios.get('/api/auth/me', {
-        headers: { 'X-Tenant': tenantIdentifier },
-        withCredentials: true
-      });
+      const headers = { 'X-Tenant': savedTenant || '' };
+      // Attach token so the backend withBearer helper can inject it as a session cookie
+      if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
+
+      const res = await axios.get('/api/auth/me', { headers, withCredentials: true });
 
       if (res.data.success) {
-        setUser(res.data.data);
+        const userData = res.data.data;
+        setUser(userData);
+        if (userData.tenant?.subdomain) {
+          localStorage.setItem('tenant', userData.tenant.subdomain);
+          axios.defaults.headers.common['X-Tenant'] = userData.tenant.subdomain;
+        }
+        if (savedToken) axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
         setIsAuthenticated(true);
-        setError(null);
-        setEmailVerificationRequired(false);
-      } else {
-        throw new Error(res.data.message);
+        setStoredActivity();
       }
     } catch (err) {
-      // Handle specific error codes
-      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
-        setEmailVerificationRequired(true);
-        setUser(null);
-        setIsAuthenticated(false);
-      } else {
-        // Clear all auth state on other errors
-        setAccessToken(null);
-        setRefreshToken(null);
-        setUser(null);
-        setIsAuthenticated(false);
-        setEmailVerificationRequired(false);
-      }
-      
-      setError(null);
+      localStorage.removeItem('tenant');
+      clearStoredActivity();
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
-  }, [getTenantIdentifier]);
+  }, [clearStoredActivity, isSessionExpired, setStoredActivity]);
 
   useEffect(() => {
     loadUser();
   }, [loadUser]);
 
-  // Register tenant with enhanced validation
+  // Register tenant
   const registerTenant = useCallback(async (formData) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Client-side validation
-      if (!formData.subdomain || !formData.schoolName || !formData.adminEmail || 
-          !formData.adminPassword || !formData.adminFirstName || !formData.adminLastName) {
-        throw new Error('All fields are required');
-      }
-
-      if (formData.adminPassword !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
-      const res = await axios.post('/api/auth/register-tenant', formData);
+      const res = await axios.post('/api/onboarding/register-tenant', formData);
 
       if (res.data.success) {
         return {
           success: true,
           message: res.data.message,
-          redirectTo: res.data.redirectTo, // BACKEND CONTROLS REDIRECT
-          requiresVerification: res.data.data?.requiresVerification || false,
-          nextStep: res.data.data?.nextStep
+          requiresVerification: res.data.data?.requiresVerification ?? true,
+          nextStep: res.data.data?.nextStep,
+          tenant: res.data.data?.tenant,
         };
       }
     } catch (err) {
-      const errorResponse = err.response?.data;
-      let message = 'Registration failed. Please try again.';
-      let fieldErrors = {};
-      
-      if (errorResponse) {
-        message = errorResponse.message || message;
-        
-        if (errorResponse.errors) {
-          fieldErrors = errorResponse.errors;
-        }
-      }
-      
+      const errorData = err.response?.data;
+      const message = errorData?.message || 'Registration failed. Please try again.';
       setError(message);
-      return { 
-        success: false, 
-        message,
-        fieldErrors: fieldErrors
-      };
+      return { success: false, message, fieldErrors: errorData?.errors || {} };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Verify email
-  const verifyEmail = useCallback(async (token, tenantIdentifier) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await axios.post('/api/auth/verify-email', {
-        token,
-        tenantIdentifier: tenantIdentifier || getTenantIdentifier()
-      });
-
-      if (res.data.success) {
-        setEmailVerificationRequired(false);
-        return {
-          success: true,
-          message: res.data.message,
-          nextStep: res.data.data.nextStep
-        };
-      }
-    } catch (err) {
-      console.error('Email verification error:', err);
-      const message = err.response?.data?.message || 'Email verification failed';
-      setError(message);
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-    }
-  }, [getTenantIdentifier]);
-
-  // Resend verification email
-  const resendVerification = useCallback(async (email, tenantIdentifier) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await axios.post('/api/auth/resend-verification', {
-        email,
-        tenantIdentifier: tenantIdentifier || getTenantIdentifier()
-      });
-
-      return {
-        success: res.data.success,
-        message: res.data.message
-      };
-    } catch (err) {
-      console.error('Resend verification error:', err);
-      const message = err.response?.data?.message || 'Failed to resend verification email';
-      setError(message);
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-    }
-  }, [getTenantIdentifier]);
-
-  // Google Sign-In with enhanced security
-  const googleSignIn = useCallback(async (credential, tenantIdentifier) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await axios.post('/api/auth/google', {
-        credential: credential,
-        tenantIdentifier: tenantIdentifier || getTenantIdentifier()
-      }, {
-        withCredentials: true
-      });
-
-      if (res.data.success) {
-        const { accessToken, refreshToken, data } = res.data;
-        
-        setAccessToken(accessToken);
-        setRefreshToken(refreshToken);
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        
-        setUser(data);
-        setIsAuthenticated(true);
-        
-        return {
-          success: true,
-          redirectTo: data.redirectTo,
-          user: data
-        };
-      }
-    } catch (err) {
-      const errorData = err.response?.data;
-      const message = errorData?.message || 'Google sign-in failed';
-      setError(message);
-      
-      // Handle specific error codes
-      if (errorData?.code === 'USER_NOT_FOUND') {
-        return {
-          success: false,
-          message,
-          code: 'USER_NOT_FOUND',
-          suggestion: errorData.suggestion,
-          email: errorData.email
-        };
-      }
-      
-      if (errorData?.code === 'EMAIL_NOT_VERIFIED') {
-        setEmailVerificationRequired(true);
-        return {
-          success: false,
-          message,
-          code: 'EMAIL_NOT_VERIFIED',
-          requiresVerification: true,
-          redirectTo: errorData.redirectTo,
-          email: errorData.email
-        };
-      }
-      
-      if (errorData?.code === 'ACCOUNT_LOCKED') {
-        return {
-          success: false,
-          message,
-          code: 'ACCOUNT_LOCKED',
-          lockedUntil: errorData.lockedUntil,
-          remainingMinutes: errorData.remainingMinutes
-        };
-      }
-      
-      if (errorData?.code === 'ACCOUNT_INACTIVE' || errorData?.code === 'ACCOUNT_ON_HOLD') {
-        return {
-          success: false,
-          message,
-          code: errorData.code
-        };
-      }
-      
-      if (errorData?.code === 'ACCOUNT_PENDING_APPROVAL') {
-        return {
-          success: false,
-          message,
-          code: 'ACCOUNT_PENDING_APPROVAL',
-          requiresApproval: true
-        };
-      }
-      
-      if (errorData?.code === 'TENANT_NOT_FOUND') {
-        return {
-          success: false,
-          message,
-          code: 'TENANT_NOT_FOUND'
-        };
-      }
-      
-      if (errorData?.code === 'TENANT_SUSPENDED') {
-        return {
-          success: false,
-          message,
-          code: 'TENANT_SUSPENDED'
-        };
-      }
-      
-      return { 
-        success: false, 
-        message,
-        code: errorData?.code
-      };
-    } finally {
-      setLoading(false);
-    }
-  }, [getTenantIdentifier]);
-
-  // Login with enhanced security
+  // Login
   const login = useCallback(async (formData) => {
     setLoading(true);
-    
     try {
-      const tenantIdentifier = formData.tenantIdentifier || getTenantIdentifier();
-      const res = await axios.post('/api/auth/login', {
-        ...formData,
-        tenantIdentifier
-      }, {
-        withCredentials: true
-      });
+      const res = await axios.post('/api/auth/login', formData);
 
       if (res.data.success) {
-        const { accessToken, refreshToken, data } = res.data;
-        
-        setAccessToken(accessToken);
-        setRefreshToken(refreshToken);
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        
+        const { data, token } = res.data;
+        if (token) {
+          localStorage.setItem('ba_token', token);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        sessionStorage.setItem('tenant', data.tenant?.subdomain || formData.tenantIdentifier || '');
+        localStorage.setItem('tenant', data.tenant?.subdomain || formData.tenantIdentifier || '');
+        axios.defaults.headers.common['X-Tenant'] = data.tenant?.subdomain || formData.tenantIdentifier || '';
         setUser(data);
         setIsAuthenticated(true);
         setEmailVerificationRequired(false);
-        setLoading(false);
-        
-        return {
-          success: true,
-          redirectTo: data.redirectTo,
-          user: data
-        };
+        setStoredActivity();
+        return { success: true, redirectTo: data.redirectTo, user: data };
       }
-      
-      setLoading(false);
+
       return { success: false, message: 'Login failed' };
     } catch (err) {
-      setLoading(false);
-      
       const errorData = err.response?.data;
-      
+
       if (errorData?.requiresVerification) {
         setEmailVerificationRequired(true);
         return {
           success: false,
           message: errorData.message || 'Email verification required',
           requiresVerification: true,
-          email: errorData.email
+          email: errorData.email,
         };
       }
-      
-      if (errorData?.accountLocked) {
-        return {
-          success: false,
-          message: errorData.message || 'Account is locked',
-          accountLocked: true,
-          lockedUntil: errorData.lockedUntil
-        };
-      }
-      
-      return { 
-        success: false, 
-        message: errorData?.message || err.message || 'Login failed. Please check your credentials.' 
-      };
-    }
-  }, [getTenantIdentifier]);
 
-  // Secure logout
+      return {
+        success: false,
+        message: errorData?.message || 'Login failed. Please check your credentials.',
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Google Sign In
+  const googleSignIn = useCallback(async (credential, tenantIdentifier) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await axios.post('/api/auth/login', {
+        email: null,
+        password: null,
+        tenantIdentifier,
+        googleCredential: credential,
+      });
+
+      if (res.data.success) {
+        const { data, token } = res.data;
+        if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem('tenant', data.tenant?.subdomain || tenantIdentifier || '');
+        setUser(data);
+        setIsAuthenticated(true);
+        setStoredActivity();
+        return { success: true, redirectTo: data.redirectTo, user: data };
+      }
+    } catch (err) {
+      const errorData = err.response?.data;
+      const message = errorData?.message || 'Google sign-in failed';
+      setError(message);
+      return { success: false, message, code: errorData?.code };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Logout
   const logout = useCallback(async () => {
     try {
-      await axios.post('/api/auth/logout', {}, {
-        withCredentials: true
-      });
+      await axios.post('/api/auth/logout');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      // Clear all auth state regardless of API call success
-      setAccessToken(null);
-      setRefreshToken(null);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('token'); // Remove legacy token too
-      delete axios.defaults.headers.common['Authorization'];
       setUser(null);
       setIsAuthenticated(false);
       setEmailVerificationRequired(false);
       setError(null);
+      localStorage.removeItem('tenant');
+      localStorage.removeItem('ba_token');
+      clearStoredActivity();
+      delete axios.defaults.headers.common['Authorization'];
+      delete axios.defaults.headers.common['X-Tenant'];
+    }
+  }, [clearStoredActivity]);
+
+  const expireSession = useCallback(async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Session expiration logout failed', error);
+    } finally {
+      clearStoredActivity();
+      window.location.href = '/';
+    }
+  }, [logout, clearStoredActivity]);
+
+  useEffect(() => {
+    if (!isAuthenticated || loading) return;
+
+    if (isSessionExpired()) {
+      expireSession();
+      return;
+    }
+
+    setStoredActivity();
+    const intervalId = window.setInterval(() => {
+      if (isAuthenticated && isSessionExpired()) {
+        expireSession();
+      }
+    }, 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isAuthenticated, loading, isSessionExpired, expireSession, setStoredActivity]);
+
+  useEffect(() => {
+    const activityHandler = () => {
+      if (isAuthenticated) {
+        setStoredActivity();
+      }
+    };
+
+    const storageHandler = (event) => {
+      if (event.key === ACTIVITY_KEY && event.newValue) {
+        const last = parseInt(event.newValue, 10);
+        if (!Number.isNaN(last) && Date.now() - last > INACTIVITY_TIMEOUT_MS) {
+          expireSession();
+        }
+      }
+    };
+
+    const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
+    events.forEach((eventName) => window.addEventListener(eventName, activityHandler, { passive: true }));
+    window.addEventListener('storage', storageHandler);
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, activityHandler));
+      window.removeEventListener('storage', storageHandler);
+    };
+  }, [isAuthenticated, setStoredActivity, expireSession]);
+
+  // Email verification — Better Auth handles via /api/auth/verify-email
+  const verifyEmail = useCallback(async (token, tenantIdentifier) => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`/api/auth/verify-email?token=${token}&callbackURL=/`);
+      if (res.data.success || res.status === 200) {
+        setEmailVerificationRequired(false);
+        return { success: true, message: 'Email verified successfully' };
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Email verification failed';
+      return { success: false, message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Resend verification
+  const resendVerification = useCallback(async (email) => {
+    try {
+      const res = await axios.post('/api/auth/send-verification-email', { email });
+      return { success: true, message: res.data.message || 'Verification email sent' };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Failed to resend' };
     }
   }, []);
 
   const contextValue = useMemo(() => ({
     user,
-    accessToken,
-    refreshToken,
     isAuthenticated,
     loading,
     error,
@@ -456,10 +354,9 @@ export const AuthProvider = ({ children }) => {
     googleSignIn,
     logout,
     loadUser,
-    refreshAccessToken
   }), [
-    user, accessToken, refreshToken, isAuthenticated, loading, error, emailVerificationRequired,
-    registerTenant, verifyEmail, resendVerification, login, googleSignIn, logout, loadUser, refreshAccessToken
+    user, isAuthenticated, loading, error, emailVerificationRequired,
+    registerTenant, verifyEmail, resendVerification, login, googleSignIn, logout, loadUser,
   ]);
 
   return (

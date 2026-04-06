@@ -50,7 +50,7 @@ export const StripeProvider = ({ children }) => {
 
         // Load subscription status (requires auth)
         try {
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('ba_token');
           if (token) {
             const subscriptionResponse = await stripeService.getSubscriptionStatus();
             if (subscriptionResponse.success) {

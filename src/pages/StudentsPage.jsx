@@ -4,6 +4,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ProfileAvatarImage from '../components/common/ProfileAvatarImage';
 import { useStudents, useDeleteStudent } from '../hooks/useStudents';
+import { useStudentLimit } from '../hooks/useStudentLimit';
 import { useClasses, useSections } from '../hooks/useFilters';
 
 const StudentsPage = () => {
@@ -42,6 +43,8 @@ const StudentsPage = () => {
   const { data: classes = [], isLoading: loadingClasses } = useClasses('student');
   const { data: sections = [] } = useSections(selectedClass, 'student');
   const deleteStudentMutation = useDeleteStudent();
+  const { limitInfo: studentLimitInfo, loading: studentLimitLoading } = useStudentLimit();
+  const studentLimitReached = !studentLimitLoading && studentLimitInfo?.currentCount >= studentLimitInfo?.limit;
 
   // Convert query error to string for existing error handling
   const error = queryError?.response?.data?.message || (queryError ? 'Failed to load students' : '');
@@ -258,15 +261,18 @@ const StudentsPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900">Student Management</h1>
-          {user && (user.role === 'admin' || user.role === 'principal') && (
+          {user && (['admin', 'principal', 'tenant_system_admin'].includes(user.role)) && (
             <Link
               to="/students/add"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${studentLimitReached ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              onClick={(e) => studentLimitReached && e.preventDefault()}
+              title={studentLimitReached ? `Student limit reached (${studentLimitInfo.currentCount}/${studentLimitInfo.limit})` : 'Add Student'}
+              aria-disabled={studentLimitReached}
             >
               <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Add Student
+              {studentLimitReached ? `Limit ${studentLimitInfo.currentCount}/${studentLimitInfo.limit}` : 'Add Student'}
             </Link>
           )}
         </div>
@@ -344,9 +350,12 @@ const StudentsPage = () => {
                 disabled={showAllClasses || loadingClasses}
               >
                 <option value="">Select Class</option>
-                {classes.map((classItem) => (
-                  <option key={classItem.value} value={classItem.value}>
-                    {classItem.label}
+                {classes.map((classItem, index) => (
+                  <option
+                    key={`${String(classItem.value ?? classItem.label ?? classItem)}-${index}`}
+                    value={classItem.value ?? classItem}
+                  >
+                    {classItem.label ?? classItem}
                   </option>
                 ))}
               </select>
@@ -368,9 +377,12 @@ const StudentsPage = () => {
                 disabled={showAllClasses || !selectedClass || sectionsForClass.length === 0}
               >
                 <option value="">All Sections</option>
-                {sections.map((section) => (
-                  <option key={section.value} value={section.value}>
-                    {section.label}
+                {sections.map((section, index) => (
+                  <option
+                    key={`${String(section.value ?? section.label ?? section)}-${index}`}
+                    value={section.value ?? section}
+                  >
+                    {section.label ?? section}
                   </option>
                 ))}
               </select>

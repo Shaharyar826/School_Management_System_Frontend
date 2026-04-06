@@ -19,23 +19,35 @@ const PricingCalculator = () => {
   }, [studentCount, selectedFeatures, pricing]);
 
   const fetchPricing = async () => {
-    try {
-      const response = await axios.get('/api/billing/pricing');
-      setPricing(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch pricing:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Mock pricing features corresponding to the backend custom plan features structure
+    setPricing({
+      features: {
+        'core': { name: 'Core Platform', price: 0.5 },
+        'attendance': { name: 'Attendance Module', price: 0.1 },
+        'exams': { name: 'Exam & Grading', price: 0.2 },
+        'finance': { name: 'Finance & Fee', price: 0.2 },
+        'transport': { name: 'Transport Management', price: 0.1 }
+      }
+    });
+    setSelectedFeatures(['core']);
+    setLoading(false);
   };
 
   const calculateEstimate = async () => {
     try {
-      const response = await axios.post('/api/billing/estimate', {
-        studentCount,
+      const response = await axios.post('/api/stripe/custom-price', {
+        students: studentCount,
         features: selectedFeatures
       });
-      setEstimate(response.data.data);
+      // Mocking the estimate response format expected by the frontend based on the stripe estimate data
+      setEstimate({
+        breakdown: [
+          { name: 'Core Platform', totalCost: response.data.data.monthlyUSD }
+        ],
+        subtotal: response.data.data.monthlyUSD,
+        minimumCharge: 0,
+        finalCost: response.data.data.monthlyUSD
+      });
     } catch (error) {
       console.error('Failed to calculate estimate:', error);
     }

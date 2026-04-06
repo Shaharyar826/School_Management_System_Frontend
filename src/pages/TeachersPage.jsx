@@ -98,7 +98,7 @@ const TeachersPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Teacher Management</h1>
-          {user && ['admin', 'principal'].includes(user.role) && (
+          {user && ['admin', 'principal', 'tenant_system_admin'].includes(user.role) && (
             <button
               onClick={() => navigate('/teachers/add')}
               className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"

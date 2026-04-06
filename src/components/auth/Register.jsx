@@ -4,6 +4,7 @@ import AuthContext from '../../context/AuthContext';
 import FormInput from '../common/FormInput';
 import PasswordStrengthInput from '../common/PasswordStrengthInput';
 import axios from 'axios';
+import { AuthLayout } from '../public/PublicLayout';
 
 const Register = () => {
   const { register } = useContext(AuthContext);
@@ -16,19 +17,17 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student', // Default role
+    role: 'student',
     subjects: [],
     classes: []
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  // Start with empty array and only populate with backend data
   const [availableClasses, setAvailableClasses] = useState([]);
   const [subjectSearchTerm, setSubjectSearchTerm] = useState('');
   const [classesLoading, setClassesLoading] = useState(false);
 
-  // Define available subjects and categories
   const [availableSubjects] = useState([
     'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
     'History', 'Geography', 'Computer Science', 'Physical Education',
@@ -36,7 +35,6 @@ const Register = () => {
     'Political Science', 'Sociology', 'Psychology', 'Environmental Science'
   ]);
 
-  // Group subjects by category for better organization
   const subjectCategories = {
     'Science': ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Environmental Science'],
     'Languages': ['English'],
@@ -48,155 +46,74 @@ const Register = () => {
 
   const { firstName, middleName, lastName, email, password, confirmPassword, role, subjects, classes } = formData;
 
-  // Fetch available classes when component mounts
   useEffect(() => {
     const fetchClasses = async () => {
       setClassesLoading(true);
       try {
-        console.log('Fetching available classes...');
-        // Use the public endpoint that doesn't require authentication
         const res = await axios.get('/api/filters/public/classes');
-        console.log('Classes API response:', res.data);
-        console.log('Response status:', res.status);
-        console.log('Response headers:', res.headers);
-
         if (res.data.success && res.data.data && res.data.data.length > 0) {
-          // Extract class values from the response
           const classes = res.data.data.map(cls => cls.value);
-          console.log('Extracted classes:', classes);
           setAvailableClasses(classes);
         } else {
-          console.log('No classes found or API returned success: false');
           setAvailableClasses([]);
         }
       } catch (err) {
         console.error('Error fetching classes:', err);
-        // More detailed error logging
-        if (err.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.error('Error response data:', err.response.data);
-          console.error('Error response status:', err.response.status);
-        } else if (err.request) {
-          // The request was made but no response was received
-          console.error('No response received:', err.request);
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          console.error('Error message:', err.message);
-        }
-
-        // Don't show error to user during registration as it's not critical
-        console.log('Failed to load available classes');
-        // Clear the classes array since we only want to show backend classes
         setAvailableClasses([]);
       } finally {
         setClassesLoading(false);
       }
     };
-
     fetchClasses();
   }, []);
 
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Handle subject selection
   const handleSubjectSelection = (subject) => {
     const updatedSubjects = [...formData.subjects];
-
     if (updatedSubjects.includes(subject)) {
-      // Remove subject if already selected
-      const index = updatedSubjects.indexOf(subject);
-      updatedSubjects.splice(index, 1);
+      updatedSubjects.splice(updatedSubjects.indexOf(subject), 1);
     } else {
-      // Add subject if not already selected
       updatedSubjects.push(subject);
     }
-
-    setFormData({
-      ...formData,
-      subjects: updatedSubjects
-    });
+    setFormData({ ...formData, subjects: updatedSubjects });
   };
 
-  // Handle class selection
   const handleClassSelection = (cls) => {
     const updatedClasses = [...formData.classes];
-
     if (updatedClasses.includes(cls)) {
-      // Remove class if already selected
-      const index = updatedClasses.indexOf(cls);
-      updatedClasses.splice(index, 1);
+      updatedClasses.splice(updatedClasses.indexOf(cls), 1);
     } else {
-      // Add class if not already selected
       updatedClasses.push(cls);
     }
-
-    setFormData({
-      ...formData,
-      classes: updatedClasses
-    });
+    setFormData({ ...formData, classes: updatedClasses });
   };
 
-  // Filter subjects based on search term
   const filteredSubjects = Object.keys(subjectCategories).reduce((acc, category) => {
     const subjectsInCategory = subjectCategories[category].filter(subject =>
       subject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
     );
-
-    if (subjectsInCategory.length > 0) {
-      acc[category] = subjectsInCategory;
-    }
-
+    if (subjectsInCategory.length > 0) acc[category] = subjectsInCategory;
     return acc;
   }, {});
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    // Validate teacher-specific fields if role is teacher
+    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
     if (role === 'teacher') {
-      if (formData.subjects.length === 0) {
-        setError('Please select at least one subject');
-        return;
-      }
-
-      // Only validate class selection if classes are available
-      if (availableClasses.length > 0 && formData.classes.length === 0) {
-        setError('Please select at least one class');
-        return;
-      }
+      if (formData.subjects.length === 0) { setError('Please select at least one subject'); return; }
+      if (availableClasses.length > 0 && formData.classes.length === 0) { setError('Please select at least one class'); return; }
     }
-
     setLoading(true);
     setError('');
     setSuccess('');
-
     try {
-      // Remove confirmPassword before sending to API
-      const { confirmPassword, ...registerData } = formData;
-
-      // If not a teacher, remove teacher-specific fields
-      if (role !== 'teacher') {
-        delete registerData.subjects;
-        delete registerData.classes;
-      }
-
+      const { confirmPassword: _cp, ...registerData } = formData;
+      if (role !== 'teacher') { delete registerData.subjects; delete registerData.classes; }
       const result = await register(registerData);
-
       if (result.success) {
         setSuccess(result.message || 'Registration successful! Redirecting to login...');
-
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        setTimeout(() => navigate('/login'), 2000);
       } else {
         setError(result.message || 'Registration failed. Please try again.');
       }
@@ -208,270 +125,190 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              sign in to your existing account
-            </Link>
+    <AuthLayout>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5.5rem 1rem 3rem', background: 'linear-gradient(135deg, #FFF0F8 0%, #F5F0FF 60%, #FAFAFA 100%)', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ width: '100%', maxWidth: 520 }}>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #E91E8C, #FF6B35)', boxShadow: '0 4px 16px rgba(233,30,140,0.3)' }}>
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            Create your account
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: 'var(--brand)', fontWeight: 600 }}>Sign in</Link>
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+        <div className="card p-8">
+          {error && (
+            <div className="alert alert-error mb-5">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="alert alert-success mb-5">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm">{success}</p>
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="field">
+                <label className="field-label">First Name <span style={{ color: '#EF4444' }}>*</span></label>
+                <input id="firstName" name="firstName" type="text" required autoComplete="given-name"
+                  className="field-input" value={firstName} onChange={onChange} placeholder="John" />
               </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="field">
+                <label className="field-label">Last Name <span style={{ color: '#EF4444' }}>*</span></label>
+                <input id="lastName" name="lastName" type="text" required autoComplete="family-name"
+                  className="field-input" value={lastName} onChange={onChange} placeholder="Doe" />
               </div>
             </div>
-          </div>
-        )}
 
-        {success && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-700">{success}</p>
-              </div>
+            <div className="field">
+              <label className="field-label">Middle Name <span style={{ color: 'var(--text-muted)' }}>(Optional)</span></label>
+              <input id="middleName" name="middleName" type="text" autoComplete="additional-name"
+                className="field-input" value={middleName} onChange={onChange} placeholder="M." />
             </div>
-          </div>
-        )}
 
-        <form className="mt-8 space-y-6" onSubmit={onSubmit}>
-          <div className="space-y-4">
-            <FormInput
-              id="firstName"
-              name="firstName"
-              type="text"
-              label="First Name"
-              autoComplete="given-name"
-              required
-              value={firstName}
-              onChange={onChange}
-              className="z-10"
-            />
+            <div className="field">
+              <label className="field-label">Email Address <span style={{ color: '#EF4444' }}>*</span></label>
+              <input id="email" name="email" type="email" required autoComplete="email"
+                className="field-input" value={email} onChange={onChange} placeholder="you@school.edu" />
+            </div>
 
-            <FormInput
-              id="middleName"
-              name="middleName"
-              type="text"
-              label="Middle Name (Optional)"
-              autoComplete="additional-name"
-              value={middleName}
-              onChange={onChange}
-              className="z-10"
-            />
+            <div className="field">
+              <label className="field-label">Password <span style={{ color: '#EF4444' }}>*</span></label>
+              <input id="password" name="password" type="password" required autoComplete="new-password"
+                className="field-input" value={password} onChange={onChange} placeholder="••••••••" />
+            </div>
 
-            <FormInput
-              id="lastName"
-              name="lastName"
-              type="text"
-              label="Last Name"
-              autoComplete="family-name"
-              required
-              value={lastName}
-              onChange={onChange}
-              className="z-10"
-            />
+            <div className="field">
+              <label className="field-label">Confirm Password <span style={{ color: '#EF4444' }}>*</span></label>
+              <input id="confirmPassword" name="confirmPassword" type="password" required autoComplete="new-password"
+                className="field-input" value={confirmPassword} onChange={onChange} placeholder="••••••••" />
+            </div>
 
-            <FormInput
-              id="email"
-              name="email"
-              type="email"
-              label="Email address"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={onChange}
-              className="z-10"
-            />
-
-            <PasswordInput
-              id="password"
-              name="password"
-              label="Password"
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={onChange}
-              className="z-10"
-            />
-
-            <PasswordInput
-              id="confirmPassword"
-              name="confirmPassword"
-              label="Confirm Password"
-              autoComplete="new-password"
-              required
-              value={confirmPassword}
-              onChange={onChange}
-              className="z-10"
-            />
-
-            <div className="floating-input-container">
-              <select
-                id="role"
-                name="role"
-                required
-                className="floating-input peer w-full px-4 py-3 border rounded-md transition-all duration-200 outline-none z-10"
-                value={role}
-                onChange={onChange}
-              >
+            <div className="field">
+              <label className="field-label">Role <span style={{ color: '#EF4444' }}>*</span></label>
+              <select id="role" name="role" required className="field-input" value={role} onChange={onChange}>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
                 <option value="accountant">Accountant</option>
                 <option value="vice-principal">Vice Principal</option>
               </select>
-
-              <label
-                htmlFor="role"
-                className={`absolute left-4 transition-all duration-200 pointer-events-none
-                  ${role ? 'text-sm text-green-500 -top-2.5 bg-white px-1' : 'text-gray-500 top-3'}`}
-              >
-                Role <span className="text-red-500">*</span>
-              </label>
             </div>
 
-            {/* Show subject and class selection only for teachers */}
+            {/* Teacher-specific fields */}
             {role === 'teacher' && (
-              <div className="space-y-4 mt-4 p-4 border border-gray-200 rounded-md">
-                <h3 className="text-md font-medium text-gray-700">Teacher Information</h3>
+              <div className="space-y-4 p-4 rounded-xl" style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-default)' }}>
+                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#E91E8C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                  Teacher Information
+                </h3>
 
                 {/* Subject selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Subjects <span className="text-red-500">*</span>
-                  </label>
+                  <label className="field-label mb-2">Select Subjects <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input type="text" placeholder="Search subjects…"
+                    className="field-input mb-3"
+                    value={subjectSearchTerm}
+                    onChange={(e) => setSubjectSearchTerm(e.target.value)} />
 
-                  {/* Subject search */}
-                  <div className="mb-3">
-                    <input
-                      type="text"
-                      placeholder="Search subjects..."
-                      className="w-full px-3 py-2 border border-yellow-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm"
-                      value={subjectSearchTerm}
-                      onChange={(e) => setSubjectSearchTerm(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Subject categories */}
-                  <div className="space-y-4 max-h-60 overflow-y-auto">
-                    {Object.keys(filteredSubjects).map((category) => {
-                      const subjectsInCategory = filteredSubjects[category];
-
-                      return (
-                        <div key={category} className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700">{category}</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {subjectsInCategory.map((subject) => (
-                              <button
-                                key={subject}
-                                type="button"
-                                onClick={() => handleSubjectSelection(subject)}
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  formData.subjects.includes(subject)
-                                    ? 'bg-green-100 text-green-800 border border-green-300'
-                                    : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                              >
-                                {subject}
-                              </button>
-                            ))}
-                          </div>
+                  <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                    {Object.keys(filteredSubjects).map((category) => (
+                      <div key={category}>
+                        <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>{category}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {filteredSubjects[category].map((subject) => (
+                            <button key={subject} type="button"
+                              onClick={() => handleSubjectSelection(subject)}
+                              className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                              style={
+                                formData.subjects.includes(subject)
+                                  ? { background: 'var(--gradient-brand)', color: '#fff', border: 'none' }
+                                  : { background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)' }
+                              }
+                            >
+                              {subject}
+                            </button>
+                          ))}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
-
                   {formData.subjects.length === 0 && (
-                    <p className="text-sm text-red-500 mt-1">Please select at least one subject</p>
+                    <p className="field-error mt-1">Please select at least one subject</p>
                   )}
                 </div>
 
                 {/* Class selection */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Classes <span className="text-red-500">*</span>
-                  </label>
-
-                  <div className="border border-gray-200 rounded-md p-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Available Classes:</h4>
+                <div>
+                  <label className="field-label mb-2">Select Classes <span style={{ color: '#EF4444' }}>*</span></label>
+                  <div className="p-3 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
                     {classesLoading ? (
-                      <div className="flex justify-center py-4">
-                        <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="ml-2 text-sm text-gray-600">Loading classes...</span>
+                      <div className="flex items-center gap-2 py-3 justify-center">
+                        <span className="spinner spinner-sm" style={{ borderColor: 'var(--brand-100)', borderTopColor: 'var(--brand)' }} />
+                        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading classes…</span>
+                      </div>
+                    ) : availableClasses.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {availableClasses.sort((a, b) => Number(a) - Number(b)).map((cls) => (
+                          <button key={cls} type="button"
+                            onClick={() => handleClassSelection(cls)}
+                            className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                            style={
+                              formData.classes.includes(cls)
+                                ? { background: 'var(--gradient-brand)', color: '#fff', border: 'none' }
+                                : { background: 'var(--bg-muted)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)' }
+                            }
+                          >
+                            Class {cls}
+                          </button>
+                        ))}
                       </div>
                     ) : (
-                      availableClasses.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {availableClasses.sort((a, b) => Number(a) - Number(b)).map((cls) => (
-                            <button
-                              key={cls}
-                              type="button"
-                              onClick={() => handleClassSelection(cls)}
-                              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                formData.classes.includes(cls)
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                  : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
-                              }`}
-                            >
-                              Class {cls}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-500">No classes available in the system.</p>
-                          <p className="text-sm text-gray-500 mt-1">Please contact the administrator.</p>
-                        </div>
-                      )
+                      <div className="text-center py-4">
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No classes available. Please contact the administrator.</p>
+                      </div>
                     )}
                   </div>
-
                   {availableClasses.length > 0 && formData.classes.length === 0 && (
-                    <p className="text-sm text-red-500 mt-1">Please select at least one class</p>
+                    <p className="field-error mt-1">Please select at least one class</p>
                   )}
                 </div>
               </div>
             )}
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '0.9375rem', borderRadius: 9999, border: 'none', background: loading ? '#D1D5DB' : 'linear-gradient(135deg, #E91E8C, #FF6B35)', color: '#fff', fontWeight: 700, fontSize: '1.0625rem', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 20px rgba(233,30,140,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'all 0.2s', marginTop: '0.5rem' }}>
               {loading ? (
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                'Create Account'
-              )}
+                <>
+                  <span className="spinner spinner-sm" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                  Creating account…
+                </>
+              ) : 'Create Account →'}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
+    </AuthLayout>
   );
 };
 
 export default Register;
+

@@ -22,6 +22,12 @@ export const useStudentLimit = () => {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem('ba_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     fetchLimitInfo();
   }, []);
 

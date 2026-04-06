@@ -15,6 +15,59 @@ export const FEATURES = {
   CONTENT_MANAGEMENT: 'content_management'
 };
 
+// Maps subscription plan IDs → which FEATURES are enabled
+// Must stay in sync with backend's stripe.controller.js PLANS config
+export const PLAN_FEATURE_MAP = {
+  trial: [
+    FEATURES.STUDENTS,
+    FEATURES.TEACHERS,
+  ],
+  basic: [
+    FEATURES.STUDENTS,
+    FEATURES.TEACHERS,
+    FEATURES.ADMIN_STAFF,
+    FEATURES.ATTENDANCE,
+    FEATURES.FEES,
+    FEATURES.SALARIES,
+    FEATURES.BULK_UPLOAD,
+  ],
+  pro: [
+    FEATURES.STUDENTS,
+    FEATURES.TEACHERS,
+    FEATURES.ADMIN_STAFF,
+    FEATURES.ATTENDANCE,
+    FEATURES.FEES,
+    FEATURES.SALARIES,
+    FEATURES.BULK_UPLOAD,
+    FEATURES.EVENTS,
+    FEATURES.MEETINGS,
+    FEATURES.CONTACT_MESSAGES,
+  ],
+  premium: [
+    FEATURES.STUDENTS,
+    FEATURES.TEACHERS,
+    FEATURES.ADMIN_STAFF,
+    FEATURES.ATTENDANCE,
+    FEATURES.FEES,
+    FEATURES.SALARIES,
+    FEATURES.BULK_UPLOAD,
+    FEATURES.EVENTS,
+    FEATURES.MEETINGS,
+    FEATURES.CONTACT_MESSAGES,
+    FEATURES.HISTORY,
+    FEATURES.SCHOOL_SETTINGS,
+    FEATURES.CONTENT_MANAGEMENT,
+  ],
+  // Custom plan — all features available (configured per-tenant)
+  custom: Object.values(FEATURES),
+};
+
+// Helper to get enabled features for a plan
+export const getFeaturesForPlan = (plan) => {
+  return PLAN_FEATURE_MAP[plan] || PLAN_FEATURE_MAP.basic;
+};
+
+
 // Feature metadata for UI rendering and validation
 export const FEATURE_CONFIG = {
   [FEATURES.STUDENTS]: {
@@ -117,6 +170,7 @@ export const getFeatureForRoute = (pathname) => {
 
 // Helper function to check if user role can access a feature
 export const canRoleAccessFeature = (userRole, feature) => {
+  if (userRole === 'tenant_system_admin' || userRole === 'owner') return true;
   const config = FEATURE_CONFIG[feature];
   return config ? config.requiredRoles.includes(userRole) : false;
 };

@@ -12,7 +12,10 @@ export const SectionHeader = ({ eyebrow, title, subtitle, center = true }) => (
   <div className={`mb-14 ${center ? 'text-center' : ''}`}>
     {eyebrow && (
       <Reveal variant="fade" duration={400}>
-        <span className="inline-block text-sm font-semibold text-[#2563EB] uppercase tracking-widest mb-3 bg-blue-50 px-3 py-1 rounded-full">
+        <span
+          className="inline-block text-sm font-semibold uppercase tracking-widest mb-3 px-3 py-1 rounded-full"
+          style={{ color: '#E91E8C', background: 'rgba(233,30,140,0.08)' }}
+        >
           {eyebrow}
         </span>
       </Reveal>

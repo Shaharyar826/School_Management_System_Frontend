@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       hmr: process.env.USE_TUNNEL === 'true' ? false : {},
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:8787',
           changeOrigin: true,
           secure: false,
         },

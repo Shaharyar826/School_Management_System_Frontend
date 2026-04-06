@@ -4,7 +4,7 @@ import AuthContext from '../../context/AuthContext';
 import FormInput from '../common/FormInput';
 import PasswordStrengthInput from '../common/PasswordStrengthInput';
 import PhoneInput from '../common/PhoneInput';
-import { Header, Footer } from '../saas/EduFlowLanding';
+import { AuthLayout } from '../public/PublicLayout';
 
 const TenantRegistration = () => {
   const { registerTenant, loading } = useContext(AuthContext);
@@ -71,7 +71,13 @@ const TenantRegistration = () => {
     const result = await registerTenant(formData);
     
     if (result.success) {
-      navigate(result.redirectTo);
+      if (result.requiresVerification || result.nextStep === 'verify-email') {
+        navigate('/verify-email', { state: { email: formData.adminEmail } });
+      } else if (result.nextStep) {
+        navigate(`/${result.nextStep.replace(/^\//, '')}`);
+      } else {
+        navigate('/login', { state: { message: 'Registration successful! Please log in.' } });
+      }
     } else {
       setError(result.message || 'Registration failed. Please try again.');
       setFieldErrors(result.fieldErrors || {});
@@ -79,17 +85,15 @@ const TenantRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <div className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Create Your School Portal
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Start your 14-day free trial
-          </p>
+    <AuthLayout>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5.5rem 1rem 3rem', background: 'linear-gradient(135deg, #FFF0F8 0%, #F5F0FF 60%, #FAFAFA 100%)', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 20, boxShadow: '0 4px 30px rgba(233,30,140,0.08)', border: '1px solid #F3E8FF', padding: '2.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #E91E8C, #FF6B35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 16px rgba(233,30,140,0.3)' }}>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          </div>
+          <h1 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.03em', marginBottom: '0.375rem' }}>Create Your School Portal</h1>
+          <p style={{ color: '#6B7280', fontSize: '0.9375rem' }}>Start your 14-day free trial. No credit card required.</p>
         </div>
 
         {error && (
@@ -224,10 +228,9 @@ const TenantRegistration = () => {
             {loading ? 'Creating...' : 'Create School Portal'}
           </button>
         </form>
+        </div>
       </div>
-      </div>
-      <Footer />
-    </div>
+    </AuthLayout>
   );
 };
 

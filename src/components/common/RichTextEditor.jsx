@@ -18,7 +18,7 @@ const RichTextEditor = ({ value, onChange, height = 300 }) => {
       // OPTION 1: WITH API KEY (CLOUD VERSION)
       // Using TinyMCE Cloud version with API key
       // This provides additional features and CDN-hosted resources
-      apiKey="pza3mwf2h0f7n73sfbp14afbmbmq1lszw7jcfesik41tyy8f"
+      apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
 
       // OPTION 2: WITHOUT API KEY (SELF-HOSTED VERSION)
       // To use without an API key:

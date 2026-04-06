@@ -7,6 +7,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import PasswordResetRequests from './PasswordResetRequests';
 import NoticeList from '../notices/NoticeList';
 import { useDashboardStats } from '../../hooks/useDashboard';
+import ComplaintModal from '../common/ComplaintModal';
 
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -14,6 +15,7 @@ const AdminDashboard = () => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resetStatus, setResetStatus] = useState({ message: '', type: '' });
   const [isResetting, setIsResetting] = useState(false);
+  const [showComplaint, setShowComplaint] = useState(false);
 
   // React Query hook for dashboard data
   const { data: dashboardData, isLoading: loading, error: queryError } = useDashboardStats(user?.role);
@@ -84,17 +86,20 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-
-          {/* Only show to admin users */}
-          {user?.role === 'admin' && (
-            <button
-              onClick={() => setIsResetModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              disabled={isResetting}
-            >
-              {isResetting ? 'Resetting...' : 'Reset Database'}
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowComplaint(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-pink-200 text-sm font-medium rounded-md text-pink-600 bg-pink-50 hover:bg-pink-100">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              File Complaint
             </button>
-          )}
+            {user?.role === 'admin' && (
+              <button onClick={() => setIsResetModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
+                disabled={isResetting}>
+                {isResetting ? 'Resetting...' : 'Reset Database'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Reset status message */}
@@ -301,6 +306,7 @@ const AdminDashboard = () => {
         cancelButtonText="Cancel"
         isDangerous={true}
       />
+      {showComplaint && <ComplaintModal onClose={() => setShowComplaint(false)} />}
     </div>
   );
 };

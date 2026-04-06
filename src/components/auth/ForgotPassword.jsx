@@ -1,26 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import FormInput from '../common/FormInput';
+import { Link } from 'react-router-dom';
+import axios from '../../config/axios';
+import { AuthLayout } from '../public/PublicLayout';
 
 const ForgotPassword = () => {
-  const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    email: '',
-    favoriteColor: '',
-    birthCity: '',
-    petName: ''
-  });
+  const [email, setEmail]     = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
-
-  const { email, favoriteColor, birthCity, petName } = formData;
-
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -29,148 +16,83 @@ const ForgotPassword = () => {
     setSuccess('');
 
     try {
-      const res = await axios.post('/api/password-reset/request', {
+      // Better Auth standard password reset — sends an email with a reset link
+      await axios.post('/api/auth/forget-password', {
         email,
-        securityAnswers: {
-          favoriteColor,
-          birthCity,
-          petName
-        }
-      });
+        redirectTo: `${window.location.origin}/reset-password`,
+      }, { timeout: 12000 });
 
-      if (res.data.success) {
-        setSuccess(res.data.message || 'Password reset request submitted successfully. Please contact your administrator.');
-        
-        // Clear form
-        setFormData({
-          email: '',
-          favoriteColor: '',
-          birthCity: '',
-          petName: ''
-        });
-
-        // Redirect to login after 5 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 5000);
-      }
+      setSuccess('Password reset email sent! Check your inbox and follow the link to reset your password.');
+      setEmail('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit password reset request. Please try again.');
+      const msg = err.response?.data?.message || err.response?.data?.error?.message;
+      setError(msg || 'Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Forgot Password</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Please provide your email and answer the security questions
-          </p>
+    <AuthLayout>
+      <div style={{ flex: 1, display: 'flex', minHeight: 'calc(100vh - 64px)', marginTop: 64, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 1.5rem', background: '#FAFAFA' }}>
+          <div style={{ width: '100%', maxWidth: 420 }}>
+
+            <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none', marginBottom: '2rem' }}>
+              <svg style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Sign In
+            </Link>
+
+            <div style={{ marginBottom: '2.5rem' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #E91E8C 0%, #FF6B35 100%)', boxShadow: '0 8px 24px rgba(233,30,140,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                <svg style={{ width: 28, height: 28 }} fill="none" viewBox="0 0 24 24" stroke="white">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
+                Forgot Password
+              </h1>
+              <p style={{ color: '#6B7280', fontSize: '0.9375rem', lineHeight: 1.6 }}>
+                Enter your email address and we'll send you a link to reset your password.
+              </p>
+            </div>
+
+            {error && (
+              <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
+                <svg style={{ width: 16, height: 16, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p style={{ fontSize: '0.875rem' }}>{error}</p>
+              </div>
+            )}
+
+            {success ? (
+              <div className="alert alert-success">
+                <svg style={{ width: 16, height: 16, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p style={{ fontSize: '0.875rem' }}>{success}</p>
+              </div>
+            ) : (
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} onSubmit={onSubmit}>
+                <div className="field">
+                  <label className="field-label">Email Address</label>
+                  <input type="email" required className="field-input" value={email}
+                    onChange={e => setEmail(e.target.value)} placeholder="you@school.edu" />
+                </div>
+                <button type="submit" disabled={loading || !email}
+                  style={{ width: '100%', padding: '0.875rem', background: (loading || !email) ? '#D1D5DB' : 'linear-gradient(135deg, #E91E8C, #FF6B35)', color: '#fff', border: 'none', borderRadius: 9999, fontWeight: 700, fontSize: '1.0625rem', cursor: (loading || !email) ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: (loading || !email) ? 'none' : '0 4px 20px rgba(233,30,140,0.35)', marginTop: '0.5rem' }}>
+                  {loading ? 'Sending...' : 'Send Reset Link →'}
+                </button>
+              </form>
+            )}
+
+          </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border-l-4 border-green-400 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-700">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={onSubmit}>
-          <div className="space-y-4">
-            <FormInput
-              id="email"
-              name="email"
-              type="email"
-              label="Email address"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={onChange}
-              className="z-10"
-            />
-
-            <div className="mt-6">
-              <h3 className="text-md font-medium text-gray-700 mb-3">Security Questions</h3>
-              <div className="space-y-4">
-                <FormInput
-                  id="favoriteColor"
-                  name="favoriteColor"
-                  type="text"
-                  label="What is your favorite color?"
-                  required
-                  value={favoriteColor}
-                  onChange={onChange}
-                />
-
-                <FormInput
-                  id="birthCity"
-                  name="birthCity"
-                  type="text"
-                  label="In which city were you born?"
-                  required
-                  value={birthCity}
-                  onChange={onChange}
-                />
-
-                <FormInput
-                  id="petName"
-                  name="petName"
-                  type="text"
-                  label="What was the name of your first pet?"
-                  required
-                  value={petName}
-                  onChange={onChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-school-navy hover:bg-school-navy-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-school-yellow"
-            >
-              {loading ? 'Submitting...' : 'Submit Request'}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                Back to login
-              </Link>
-            </div>
-          </div>
-        </form>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

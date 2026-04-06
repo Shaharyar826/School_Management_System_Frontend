@@ -11,15 +11,10 @@ const PricingPage = () => {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [pricing, setPricing] = useState({ total: 0, breakdown: [] });
   const [error, setError] = useState('');
-
-
-
   const [pricingData, setPricingData] = useState(null);
   const [studentCount, setStudentCount] = useState(50);
 
-  useEffect(() => {
-    fetchPricingData();
-  }, []);
+  useEffect(() => { fetchPricingData(); }, []);
 
   const fetchPricingData = async () => {
     try {
@@ -31,9 +26,7 @@ const PricingPage = () => {
   };
 
   useEffect(() => {
-    if (pricingData) {
-      fetchOnboardingStatus();
-    }
+    if (pricingData) fetchOnboardingStatus();
   }, [pricingData]);
 
   const fetchOnboardingStatus = async () => {
@@ -41,29 +34,22 @@ const PricingPage = () => {
     try {
       const tenantIdentifier = window.location.hostname.split('.')[0] || 'cbhstj';
       const headers = { 'X-Tenant': tenantIdentifier };
-      
       const response = await axios.get('/api/onboarding/status', { headers });
-      
       if (response.data.success) {
         let enabledFeatures = response.data.data.tenant.settings?.features?.enabled || [];
-        // Convert uppercase feature names to lowercase for pricing compatibility
-        enabledFeatures = enabledFeatures.map(feature => feature.toLowerCase());
+        enabledFeatures = enabledFeatures.map(f => f.toLowerCase());
         setSelectedFeatures(enabledFeatures);
         calculatePricing(enabledFeatures);
       }
     } catch (err) {
       console.error('Failed to fetch onboarding status:', err);
-      // If status fails, try to get features from URL params or use defaults
       const urlParams = new URLSearchParams(window.location.search);
       const featuresParam = urlParams.get('features');
       if (featuresParam) {
-        let features = featuresParam.split(',');
-        // Convert to lowercase
-        features = features.map(feature => feature.toLowerCase());
+        let features = featuresParam.split(',').map(f => f.toLowerCase());
         setSelectedFeatures(features);
         calculatePricing(features);
       } else {
-        // Use default features if nothing is available
         const defaultFeatures = ['students', 'teachers', 'attendance', 'fees'];
         setSelectedFeatures(defaultFeatures);
         calculatePricing(defaultFeatures);
@@ -75,65 +61,39 @@ const PricingPage = () => {
   };
 
   const calculatePricing = async (features) => {
-    if (!pricingData || features.length === 0) {
-      setPricing({ total: 0, breakdown: [] });
-      return;
-    }
-
+    if (!pricingData || features.length === 0) { setPricing({ total: 0, breakdown: [] }); return; }
     try {
-      // Get student count from URL params or use default
       const urlParams = new URLSearchParams(window.location.search);
       const urlStudentCount = parseInt(urlParams.get('students')) || studentCount;
       setStudentCount(urlStudentCount);
-
-      // Use the same pricing calculation as setup page
       const response = await axios.post('/api/billing/estimate', {
         studentCount: urlStudentCount,
-        features: features.map(f => f.toUpperCase()) // Convert back to uppercase for API
+        features: features.map(f => f.toUpperCase())
       });
-      
       const estimate = response.data.data;
-      setPricing({
-        total: estimate.finalCost,
-        breakdown: estimate.breakdown
-      });
+      setPricing({ total: estimate.finalCost, breakdown: estimate.breakdown });
     } catch (error) {
       console.error('Failed to calculate pricing:', error);
-      // Fallback to zero pricing
       setPricing({ total: 0, breakdown: [] });
     }
   };
 
   const handleStartTrial = async () => {
-    if (selectedFeatures.length === 0) {
-      setError('Please select at least one feature to start your trial');
-      return;
-    }
-
+    if (selectedFeatures.length === 0) { setError('Please select at least one feature to start your trial'); return; }
     setCheckoutLoading(true);
     setError('');
-    
     try {
       const tenantIdentifier = window.location.hostname.split('.')[0] || 'cbhstj';
       const headers = { 'X-Tenant': tenantIdentifier };
-      
-      // First, save the selected features
       await axios.post('/api/onboarding/select-features', {
         selectedFeatures: selectedFeatures.map(f => f.toUpperCase()),
-        selectedPlan: 'starter',
-        studentCount: studentCount
+        selectedPlan: 'starter', studentCount
       }, { headers });
-      
-      // Then create checkout session
       const response = await axios.post('/api/onboarding/create-checkout-session', {}, { headers });
-      
       if (response.data.success && response.data.data.checkoutUrl) {
         window.location.href = response.data.data.checkoutUrl;
-      } else {
-        setError('Failed to create checkout session');
-      }
+      } else setError('Failed to create checkout session');
     } catch (err) {
-      console.error('Trial start failed:', err);
       setError(err.response?.data?.message || 'Failed to start trial');
     } finally {
       setCheckoutLoading(false);
@@ -141,35 +101,21 @@ const PricingPage = () => {
   };
 
   const handlePayNow = async () => {
-    if (selectedFeatures.length === 0) {
-      setError('Please select at least one feature to proceed with payment');
-      return;
-    }
-
+    if (selectedFeatures.length === 0) { setError('Please select at least one feature to proceed'); return; }
     setCheckoutLoading(true);
     setError('');
-    
     try {
       const tenantIdentifier = window.location.hostname.split('.')[0] || 'cbhstj';
       const headers = { 'X-Tenant': tenantIdentifier };
-      
-      // First, save the selected features
       await axios.post('/api/onboarding/select-features', {
         selectedFeatures: selectedFeatures.map(f => f.toUpperCase()),
-        selectedPlan: 'starter',
-        studentCount: studentCount
+        selectedPlan: 'starter', studentCount
       }, { headers });
-      
-      // Then create checkout session
       const response = await axios.post('/api/onboarding/create-checkout-session', {}, { headers });
-      
       if (response.data.success && response.data.data.checkoutUrl) {
         window.location.href = response.data.data.checkoutUrl;
-      } else {
-        setError('Failed to create checkout session');
-      }
+      } else setError('Failed to create checkout session');
     } catch (err) {
-      console.error('Checkout failed:', err);
       setError(err.response?.data?.message || 'Payment setup failed');
     } finally {
       setCheckoutLoading(false);
@@ -178,161 +124,170 @@ const PricingPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="spinner" />
+          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Loading your plan…</p>
+        </div>
       </div>
     );
   }
 
+  const benefits = [
+    { title: 'Complete School Management', desc: 'All selected features fully integrated' },
+    { title: 'Cloud-Based Access', desc: 'Access from anywhere, anytime' },
+    { title: 'Regular Updates', desc: 'New features added monthly' },
+    { title: 'Priority Support', desc: '24/7 help when you need it' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+    <div className="min-h-screen py-12 px-4" style={{ background: 'var(--bg-base)' }}>
+      <div className="max-w-4xl mx-auto">
+
+        {/* ── Header ── */}
+        <div className="text-center mb-12">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-5"
+            style={{ background: 'var(--brand-50)', color: 'var(--brand)', border: '1px solid var(--brand-200)' }}
+          >
+            💳 Your Custom Plan
+          </div>
+          <h1 className="text-4xl font-bold mb-3" style={{ letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
             Your School Management Plan
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Based on the features you selected
+          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+            Based on the features you selected for your institution
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="alert alert-info mb-8">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm">{error}</p>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 bg-blue-50 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Selected Features
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Your customized school management solution
-            </p>
-          </div>
-
-          <div className="p-6">
-            {/* Selected Features List */}
-            <div className="space-y-4 mb-8">
-              {selectedFeatures.length > 0 ? (
-                pricing.breakdown.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                      <span className="text-gray-900 font-medium">{item.name}</span>
-                    </div>
-                    <span className="text-gray-900 font-semibold">${item.totalCost?.toFixed(2) || item.price}/month</span>
+        <div className="grid lg:grid-cols-3 gap-6 mb-6">
+          {/* ── Selected Features (left 2 cols) ── */}
+          <div className="lg:col-span-2">
+            <div className="card overflow-hidden">
+              <div className="px-6 py-5" style={{ background: 'var(--brand-50)', borderBottom: '1px solid var(--border-default)' }}>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Selected Features</h2>
+                <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>Your customized school management solution</p>
+              </div>
+              <div className="p-6">
+                {selectedFeatures.length > 0 ? (
+                  <div className="space-y-2">
+                    {pricing.breakdown.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center py-3 px-4 rounded-xl"
+                        style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-default)' }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full" style={{ background: '#10B981', flexShrink: 0 }} />
+                          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
+                        </div>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          ${item.totalCost?.toFixed(2) || item.price}/mo
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No features selected. Please go back and select features.</p>
-                  <button 
-                    onClick={() => navigate('/setup?step=features')}
-                    className="mt-2 text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Select Features
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Pricing Summary */}
-            <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold text-gray-900">Total Monthly Cost</span>
-                <span className="text-2xl font-bold text-blue-600">${pricing.total?.toFixed(2) || '0.00'}/month</span>
-              </div>
-              
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>✓ 14-day free trial included</p>
-                <p>✓ Cancel anytime</p>
-                <p>✓ No setup fees</p>
-                <p>✓ 24/7 support included</p>
+                ) : (
+                  <div className="py-12 text-center">
+                    <div className="text-4xl mb-3">📋</div>
+                    <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>No features selected</p>
+                    <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Please go back and select features for your school.</p>
+                    <button
+                      onClick={() => navigate('/setup?step=features')}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Select Features →
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={handleStartTrial}
-                disabled={checkoutLoading || selectedFeatures.length === 0}
-                className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
-              >
-                {checkoutLoading ? 'Starting...' : 'Start 14-Day Free Trial'}
-              </button>
-              
-              <button
-                onClick={handlePayNow}
-                disabled={checkoutLoading || selectedFeatures.length === 0}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {checkoutLoading ? 'Processing...' : 'Pay Now & Start Immediately'}
-              </button>
+          {/* ── Pricing Summary (right col) ── */}
+          <div className="flex flex-col gap-4">
+            {/* Total card */}
+            <div className="card-brand rounded-2xl p-6 text-white">
+              <p className="text-white/80 text-sm font-medium mb-2">Total Monthly Cost</p>
+              <p className="text-4xl font-bold mb-1">${pricing.total?.toFixed(2) || '0.00'}</p>
+              <p className="text-white/70 text-xs">/month · billed monthly</p>
+              <div className="mt-6 space-y-2 text-sm text-white/90">
+                {['14-day free trial', 'Cancel anytime', 'No setup fees', '24/7 support'].map(t => (
+                  <div key={t} className="flex items-center gap-2">
+                    <span>✓</span><span>{t}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Secure payment powered by Stripe • Your data is protected
-            </p>
+            {/* Students */}
+            <div className="card p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Students</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{studentCount}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>enrolled learners</p>
+            </div>
           </div>
         </div>
 
-        {/* Feature Benefits */}
-        <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            What You Get
-          </h3>
+        {/* ── Action Buttons ── */}
+        <div className="card p-6">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <button
+              onClick={handleStartTrial}
+              disabled={checkoutLoading || selectedFeatures.length === 0}
+              className="btn btn-success btn-lg flex-1"
+            >
+              {checkoutLoading
+                ? <span className="flex items-center gap-2 justify-center"><span className="spinner spinner-sm" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />Starting…</span>
+                : '🚀 Start 14-Day Free Trial'}
+            </button>
+            <button
+              onClick={handlePayNow}
+              disabled={checkoutLoading || selectedFeatures.length === 0}
+              className="btn btn-primary btn-lg flex-1"
+            >
+              {checkoutLoading
+                ? <span className="flex items-center gap-2 justify-center"><span className="spinner spinner-sm" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />Processing…</span>
+                : '💳 Pay Now & Start Immediately'}
+            </button>
+          </div>
+          <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+            🔒 Secure payment powered by Stripe · Your data is protected with bank-level encryption
+          </p>
+        </div>
+
+        {/* ── Benefits Grid ── */}
+        <div className="card p-6 mt-6">
+          <h3 className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>What You Get</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+            {benefits.map((b, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: '#ECFDF5' }}
+                >
+                  <svg className="w-4 h-4" style={{ color: '#10B981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{b.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{b.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">Complete School Management</p>
-                <p className="text-sm text-gray-600">All selected features fully integrated</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Cloud-Based Access</p>
-                <p className="text-sm text-gray-600">Access from anywhere, anytime</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Regular Updates</p>
-                <p className="text-sm text-gray-600">New features added monthly</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Priority Support</p>
-                <p className="text-sm text-gray-600">Get help when you need it</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+
       </div>
     </div>
   );

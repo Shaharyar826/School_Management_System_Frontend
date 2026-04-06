@@ -53,16 +53,27 @@ const AddStudent = () => {
     admissionDate: new Date().toISOString().split('T')[0]
   });
 
-  // Function to generate email from first and last name
-  const generateEmail = (firstName, lastName) => {
-    if (!firstName || !lastName) return '';
+  const getTenantEmailDomain = () => {
+    const hostname = window.location.hostname.toLowerCase().trim();
 
-    // Convert to lowercase and remove spaces and special characters
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      const tenant = localStorage.getItem('tenant')?.trim().toLowerCase();
+      return tenant || hostname || 'localhost';
+    }
+
+    return hostname;
+  };
+
+  // Function to generate email from first name + middle name or last name
+  const generateEmail = (firstName, middleName, lastName) => {
+    const secondName = middleName || lastName;
+    if (!firstName || !secondName) return '';
+
     const cleanFirstName = firstName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanLastName = lastName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanSecondName = secondName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const domain = getTenantEmailDomain();
 
-    // Create email in format std[firstname][lastname]@schoolms.com
-    return `std${cleanFirstName}${cleanLastName}@schoolms.com`;
+    return `std${cleanFirstName}${cleanSecondName}@${domain}.com`;
   };
 
   const handleUserChange = (e) => {
@@ -74,9 +85,9 @@ const AddStudent = () => {
       [name]: value
     };
 
-    // If first name or last name is changed, auto-generate email
-    if ((name === 'firstName' || name === 'lastName') && updatedUserData.firstName && updatedUserData.lastName) {
-      const generatedEmail = generateEmail(updatedUserData.firstName, updatedUserData.lastName);
+    // If first name, middle name or last name is changed, auto-generate email
+    if (['firstName', 'middleName', 'lastName'].includes(name) && updatedUserData.firstName && (updatedUserData.middleName || updatedUserData.lastName)) {
+      const generatedEmail = generateEmail(updatedUserData.firstName, updatedUserData.middleName, updatedUserData.lastName);
       updatedUserData.email = generatedEmail;
       setEmailGenerated(true);
     }
@@ -117,6 +128,65 @@ const AddStudent = () => {
     }
   };
 
+  const removeEmptyFields = (obj) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    const cleaned = Array.isArray(obj) ? [] : {};
+
+    Object.entries(obj).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === '') return;
+
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const nested = removeEmptyFields(value);
+        if (nested && Object.keys(nested).length > 0) {
+          cleaned[key] = nested;
+        }
+      } else {
+        cleaned[key] = value;
+      }
+    });
+
+    return cleaned;
+  };
+
+  const buildStudentPayload = () => {
+    return removeEmptyFields({
+      firstName: userData.firstName,
+      middleName: userData.middleName,
+      lastName: userData.lastName,
+      email: userData.email,
+      password: userData.password,
+      role: userData.role,
+      rollNumber: studentData.rollNumber,
+      dateOfBirth: studentData.dateOfBirth,
+      gender: studentData.gender,
+      class: studentData.class,
+      section: studentData.section,
+      monthlyFee: studentData.monthlyFee,
+      admissionDate: studentData.admissionDate,
+      street: studentData.address.street,
+      city: studentData.address.city,
+      state: studentData.address.state,
+      zipCode: studentData.address.zipCode,
+      country: studentData.address.country,
+      fatherName: studentData.parentInfo.fatherName,
+      motherName: studentData.parentInfo.motherName,
+      guardianName: studentData.parentInfo.guardianName,
+      contactNumber: studentData.parentInfo.contactNumber,
+      parentEmail: studentData.parentInfo.email,
+      occupation: studentData.parentInfo.occupation,
+      userData: removeEmptyFields({
+        ...userData
+      }),
+      studentData: removeEmptyFields({
+        ...studentData
+      })
+    });
+  };
+
+  const getAxiosErrorMessage = (err) => {
+    return err.response?.data?.message || err.response?.data?.error?.message || err.message || 'Failed to add student';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setValidateForm(true);
@@ -137,18 +207,21 @@ const AddStudent = () => {
       const userDataWithoutImage = { ...userData };
       delete userDataWithoutImage.profileImage;
 
-      console.log('Creating student without image:', { userData: userDataWithoutImage, studentData });
+      const sanitizedUserData = removeEmptyFields(userDataWithoutImage);
+      const sanitizedStudentData = removeEmptyFields(studentData);
+      const requestBody = buildStudentPayload();
 
-      const res = await axios.post('/api/students', {
-        userData: userDataWithoutImage,
-        studentData
-      });
+      console.log('Creating student without image:', requestBody);
+
+      const res = await axios.post('/api/students', requestBody);
 
       if (res.data.success) {
-        const createdUser = res.data.data.user;
+        const createdData = res.data.data;
+        const createdStudentId = createdData?.id || createdData?.student?._id || createdData?.student?.id;
+        const createdUserId = createdData?.user?.id || createdData?.user?._id || createdData?.userId || createdData?.user;
 
-        // Now upload the profile picture for the created user
-        if (profileImageFile && createdUser.id) {
+        // Now upload the profile picture for the created student/user
+        if (profileImageFile && (createdStudentId || createdUserId)) {
           try {
             console.log('Starting profile image upload...');
             setUploadStatus('Uploading profile image...');
@@ -158,20 +231,30 @@ const AddStudent = () => {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             const formData = new FormData();
-            formData.append('profileImage', profileImageFile);
+            formData.append('image', profileImageFile);
 
-            console.log('Uploading profile image for user:', createdUser.id);
+            let uploadUrl = null;
+            if (createdStudentId) {
+              formData.append('entityType', 'student');
+              formData.append('entityId', createdStudentId);
+              uploadUrl = '/api/images/profile';
+            } else if (createdUserId) {
+              uploadUrl = `/api/profile-image/upload/${createdUserId}`;
+            }
 
-            await axios.post(`/api/profile-image/upload/${createdUser.id}`, formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              },
-              onUploadProgress: (progressEvent) => {
-                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                console.log('Upload progress:', progress + '%');
-                setUploadProgress(progress);
-              }
-            });
+            if (uploadUrl) {
+              console.log('Uploading profile image to:', uploadUrl);
+              await axios.post(uploadUrl, formData, {
+                headers: {
+                  'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: (progressEvent) => {
+                  const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                  console.log('Upload progress:', progress + '%');
+                  setUploadProgress(progress);
+                }
+              });
+            }
 
             setUploadStatus('Profile image uploaded successfully!');
             setUploadProgress(100);
@@ -191,8 +274,8 @@ const AddStudent = () => {
         navigate('/students');
       }
     } catch (err) {
-      console.error('Error:', err);
-      setError(err.response?.data?.message || 'Failed to add student');
+      console.error('Error:', err.response?.data || err);
+      setError(getAxiosErrorMessage(err));
     } finally {
       setLoading(false);
     }

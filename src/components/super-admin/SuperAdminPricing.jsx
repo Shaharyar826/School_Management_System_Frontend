@@ -1,327 +1,295 @@
 import SuperAdminLayout from './SuperAdminLayout';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from '../../config/axios';
+import SuperAdminContext from '../../context/SuperAdminContext';
+import { toast } from 'react-toastify';
+
+const ALL_FEATURES = [
+  'student_management','bulk_student_upload','student_profile','siblings_connection','student_portal',
+  'teacher_management','admin_staff_management','support_staff_management','bulk_teacher_upload','teacher_portal',
+  'parent_portal','parent_dashboard',
+  'fee_management','fee_collection','fee_receipts','fee_arrears','partial_payments',
+  'salary_management','salary_payment',
+  'attendance_marking','attendance_reports','attendance_summary',
+  'admin_dashboard','teacher_dashboard','student_dashboard',
+  'notices','meetings','notifications','contact_messages',
+  'exam_management','result_management','auto_grading',
+  'school_settings','logo_upload','profile_images','gallery',
+  'landing_page_events','testimonials','page_content','public_school_page','public_gallery',
+  'upload_history','results_export','history_audit_log',
+  'stripe_billing','billing_portal',
+];
 
 const SuperAdminPricing = () => {
+  const { token } = useContext(SuperAdminContext);
+  const headers = { Authorization: `Bearer ${token}` };
+
   const [plans, setPlans] = useState([]);
+  const [rates, setRates] = useState({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState('plans'); // plans | currencies
   const [editingPlan, setEditingPlan] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const fetchPlans = async () => {
+  const fetchAll = async () => {
     try {
-      const token = localStorage.getItem('superAdminToken');
-      const response = await axios.get('/api/super-admin/pricing-plans', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPlans(response.data.data || defaultPlans);
-    } catch (error) {
-      console.error('Failed to fetch plans:', error);
-      setPlans(defaultPlans);
-    } finally {
-      setLoading(false);
-    }
+      const res = await axios.get('/api/super-admin/platform/settings', { headers });
+      setPlans(res.data.data.pricing_plans || []);
+      setRates(res.data.data.currency_rates || {});
+    } catch { toast.error('Failed to load settings'); }
+    finally { setLoading(false); }
   };
 
-  const defaultPlans = [
-    {
-      id: 'basic',
-      name: 'Basic',
-      price: 29,
-      interval: 'month',
-      features: ['students', 'teachers', 'attendance'],
-      limits: { students: 100, teachers: 10, storage: '1GB' },
-      active: true
-    },
-    {
-      id: 'standard',
-      name: 'Standard',
-      price: 59,
-      interval: 'month',
-      features: ['students', 'teachers', 'attendance', 'fees', 'events'],
-      limits: { students: 500, teachers: 50, storage: '5GB' },
-      active: true
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 99,
-      interval: 'month',
-      features: ['students', 'teachers', 'attendance', 'fees', 'events', 'salaries', 'bulk_upload'],
-      limits: { students: 'unlimited', teachers: 'unlimited', storage: '50GB' },
-      active: true
-    }
-  ];
-
-  const savePlan = async (planData) => {
+  const savePlans = async (updated) => {
+    setSaving(true);
     try {
-      const token = localStorage.getItem('superAdminToken');
-      if (editingPlan) {
-        await axios.put(`/api/super-admin/pricing-plans/${editingPlan.id}`, 
-          planData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        await axios.post('/api/super-admin/pricing-plans', 
-          planData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      }
-      fetchPlans();
-      setEditingPlan(null);
-      setShowCreateModal(false);
-    } catch (error) {
-      alert('Failed to save plan');
-    }
+      await axios.put('/api/super-admin/platform/settings/pricing_plans', { value: updated }, { headers });
+      setPlans(updated);
+      toast.success('Pricing plans saved');
+    } catch { toast.error('Failed to save plans'); }
+    finally { setSaving(false); }
   };
 
-  const deletePlan = async (planId) => {
-    if (!confirm('Are you sure you want to delete this plan?')) return;
-    
+  const saveRates = async (updated) => {
+    setSaving(true);
     try {
-      const token = localStorage.getItem('superAdminToken');
-      await axios.delete(`/api/super-admin/pricing-plans/${planId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchPlans();
-    } catch (error) {
-      alert('Failed to delete plan');
-    }
+      await axios.put('/api/super-admin/platform/settings/currency_rates', { value: updated }, { headers });
+      setRates(updated);
+      toast.success('Currency rates saved');
+    } catch { toast.error('Failed to save rates'); }
+    finally { setSaving(false); }
   };
 
-  if (loading) {
-    return (
-      <SuperAdminLayout>
-        <div className="p-6">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        </div>
-      </SuperAdminLayout>
-    );
-  }
+  const handlePlanSave = (plan) => {
+    const updated = editingPlan?.id && plans.find(p => p.id === editingPlan.id)
+      ? plans.map(p => p.id === plan.id ? plan : p)
+      : [...plans, { ...plan, id: plan.name.toLowerCase().replace(/\s+/g, '_') }];
+    savePlans(updated);
+    setEditingPlan(null);
+  };
+
+  const togglePlanActive = (id) => savePlans(plans.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  const deletePlan = (id) => { if (confirm('Delete this plan?')) savePlans(plans.filter(p => p.id !== id)); };
+
+  if (loading) return (
+    <SuperAdminLayout>
+      <div className="flex items-center justify-center h-96">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    </SuperAdminLayout>
+  );
 
   return (
     <SuperAdminLayout>
-      <div className="p-6">
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Pricing Plans</h1>
-              <p className="text-gray-600">Manage subscription plans and pricing</p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              Create New Plan
-            </button>
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Pricing & Currency</h1>
+            <p className="text-sm text-slate-500 mt-0.5">Changes reflect immediately on all public pages</p>
           </div>
+          {saving && <span className="text-sm text-indigo-600 font-medium">Saving...</span>}
         </div>
 
-        {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plans.map((plan) => (
-            <div key={plan.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                    <div className="flex items-baseline mt-2">
-                      <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
-                      <span className="text-gray-500 ml-1">/{plan.interval}</span>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    plan.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {plan.active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-
-                {/* Features */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Features</h4>
-                  <div className="space-y-1">
-                    {plan.features.map(feature => (
-                      <div key={feature} className="flex items-center text-sm text-gray-600">
-                        <svg className="h-4 w-4 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {feature.replace('_', ' ').toUpperCase()}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Limits */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Limits</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>Students: {plan.limits.students}</div>
-                    <div>Teachers: {plan.limits.teachers}</div>
-                    <div>Storage: {plan.limits.storage}</div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setEditingPlan(plan)}
-                    className="flex-1 bg-indigo-600 text-white px-3 py-2 rounded text-sm hover:bg-indigo-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deletePlan(plan.id)}
-                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+          {['plans', 'currencies'].map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              {t === 'plans' ? 'Pricing Plans' : 'Currency Rates'}
+            </button>
           ))}
         </div>
 
-        {/* Plan Statistics */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Plan Statistics</h3>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">45%</div>
-                <div className="text-sm text-gray-500">Basic Plan</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">35%</div>
-                <div className="text-sm text-gray-500">Standard Plan</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">20%</div>
-                <div className="text-sm text-gray-500">Premium Plan</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">$12,450</div>
-                <div className="text-sm text-gray-500">Monthly Revenue</div>
-              </div>
+        {/* Plans tab */}
+        {tab === 'plans' && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button onClick={() => setEditingPlan({})}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                Add Plan
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {plans.map(plan => (
+                <div key={plan.id} className={`bg-white rounded-xl border p-5 space-y-4 ${plan.popular ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-slate-200'}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-slate-900">{plan.name}</h3>
+                        {plan.popular && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Popular</span>}
+                      </div>
+                      <p className="text-2xl font-bold text-slate-900 mt-1">
+                        ${plan.pricePerStudentUSD}
+                        <span className="text-sm font-normal text-slate-400"> /student/mo</span>
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">Up to {plan.maxStudents ?? '∞'} students</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${plan.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                      {plan.active ? 'Active' : 'Hidden'}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-slate-500 space-y-1 max-h-40 overflow-y-auto">
+                    {(plan.features || []).map(f => (
+                      <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <svg width="12" height="12" fill="none" stroke="#10B981" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M5 13l4 4L19 7" /></svg>
+                        <span style={{ color: '#374151', fontSize: 11 }}>{f.replace(/_/g, ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => setEditingPlan(plan)}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                      Edit
+                    </button>
+                    <button onClick={() => togglePlanActive(plan.id)}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                      {plan.active ? 'Hide' : 'Show'}
+                    </button>
+                    <button onClick={() => deletePlan(plan.id)}
+                      className="px-3 py-1.5 text-xs font-medium border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Create/Edit Modal */}
-        {(showCreateModal || editingPlan) && (
-          <PlanModal
-            plan={editingPlan}
-            onSave={savePlan}
-            onClose={() => {
-              setShowCreateModal(false);
-              setEditingPlan(null);
-            }}
-          />
+        {/* Currencies tab */}
+        {tab === 'currencies' && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <p className="text-sm text-slate-500">Rates are relative to USD (1 USD = X currency). Users see prices in their local currency based on their country.</p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {Object.entries(rates).map(([code, info]) => (
+                <div key={code} className="px-5 py-3.5 flex items-center gap-4">
+                  <div className="w-10 text-center">
+                    <span className="text-lg font-bold text-slate-700">{info.symbol}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800">{info.name}</p>
+                    <p className="text-xs text-slate-400">{code}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">1 USD =</span>
+                    <input type="number" step="0.01" min="0"
+                      className="w-24 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      value={info.rate}
+                      onChange={e => setRates(prev => ({ ...prev, [code]: { ...prev[code], rate: parseFloat(e.target.value) || 0 } }))}
+                    />
+                    <span className="text-xs text-slate-400">{code}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-5 py-4 border-t border-slate-100 flex justify-end">
+              <button onClick={() => saveRates(rates)} disabled={saving}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                Save Rates
+              </button>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Plan edit modal */}
+      {editingPlan !== null && (
+        <PlanModal plan={editingPlan} onSave={handlePlanSave} onClose={() => setEditingPlan(null)} />
+      )}
     </SuperAdminLayout>
   );
 };
 
 const PlanModal = ({ plan, onSave, onClose }) => {
-  const [formData, setFormData] = useState(plan || {
-    name: '',
-    price: 0,
-    interval: 'month',
-    features: [],
-    limits: { students: 0, teachers: 0, storage: '1GB' },
-    active: true
+  const isNew = !plan.id;
+  const [form, setForm] = useState({
+    id: plan.id || '',
+    name: plan.name || '',
+    pricePerStudentUSD: plan.pricePerStudentUSD ?? 0.5,
+    maxStudents: plan.maxStudents ?? 500,
+    features: plan.features || [],
+    popular: plan.popular ?? false,
+    active: plan.active ?? true,
+    description: plan.description || '',
   });
 
-  const availableFeatures = [
-    'students', 'teachers', 'attendance', 'fees', 'salaries', 
-    'events', 'meetings', 'bulk_upload', 'contact_messages'
-  ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  const toggleFeature = (feature) => {
-    const features = formData.features.includes(feature)
-      ? formData.features.filter(f => f !== feature)
-      : [...formData.features, feature];
-    setFormData({ ...formData, features });
-  };
+  const toggle = (f) => setForm(p => ({
+    ...p, features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f],
+  }));
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {plan ? 'Edit Plan' : 'Create New Plan'}
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Plan Name</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Price</label>
-              <input
-                type="number"
-                required
-                min="0"
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              />
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-base font-semibold text-slate-900">{isNew ? 'New Plan' : `Edit — ${plan.name}`}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
 
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {availableFeatures.map(feature => (
-                  <label key={feature} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.features.includes(feature)}
-                      onChange={() => toggleFeature(feature)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">{feature.replace('_', ' ').toUpperCase()}</span>
-                  </label>
-                ))}
-              </div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Plan Name</label>
+              <input className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Price per Student (USD/mo)</label>
+              <input type="number" step="0.01" min="0"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.pricePerStudentUSD} onChange={e => setForm(p => ({ ...p, pricePerStudentUSD: parseFloat(e.target.value) || 0 }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Max Students</label>
+              <input type="number" min="1"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.maxStudents} onChange={e => setForm(p => ({ ...p, maxStudents: parseInt(e.target.value) || 0 }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
+              <input className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+          </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              >
-                {plan ? 'Update' : 'Create'}
-              </button>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input type="checkbox" checked={form.popular} onChange={e => setForm(p => ({ ...p, popular: e.target.checked }))} className="rounded" />
+              Mark as Popular
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input type="checkbox" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="rounded" />
+              Active (visible on site)
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-2">Features ({form.features.length} selected)</label>
+            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
+              {ALL_FEATURES.map(f => (
+                <label key={f} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" checked={form.features.includes(f)} onChange={() => toggle(f)} className="rounded" />
+                  {f.replace(/_/g, ' ')}
+                </label>
+              ))}
             </div>
-          </form>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">Cancel</button>
+          <button onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            {isNew ? 'Create Plan' : 'Save Changes'}
+          </button>
         </div>
       </div>
     </div>
