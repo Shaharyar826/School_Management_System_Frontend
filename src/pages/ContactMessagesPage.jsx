@@ -4,7 +4,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination';
-import { formatDate } from '../utils/formatDate';
+import { formatDate } from '../utils/dateUtils';
 import { useContactMessages } from '../context/ContactMessageContext';
 
 const ContactMessagesPage = () => {
