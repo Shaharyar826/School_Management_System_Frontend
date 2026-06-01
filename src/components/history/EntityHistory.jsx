@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import Spinner from '../common/Spinner';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const EntityHistory = ({ entityType, entityId }) => {
   const [history, setHistory] = useState([]);
@@ -73,7 +73,7 @@ const EntityHistory = ({ entityType, entityId }) => {
       
       {loading ? (
         <div className="flex justify-center items-center py-8">
-          <Spinner />
+          <LoadingSpinner />
         </div>
       ) : error ? (
         <div className="px-4 py-5 sm:p-6">

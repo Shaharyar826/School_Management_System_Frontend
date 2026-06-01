@@ -15,7 +15,7 @@ import {
 
 /* ── All React logic / context / feature flags UNCHANGED ── */
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
   const { user }       = useContext(AuthContext);
   const { hasFeature } = useContext(TenantFeaturesContext);
   const { schoolName } = useContext(TenantConfigContext);
@@ -87,7 +87,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className="school-sidebar"
+      className="school-sidebar h-full"
       style={{ width: collapsed ? 64 : 256 }}
     >
       {/* ── Header ── */}
@@ -97,27 +97,51 @@ const Sidebar = () => {
             {schoolName}
           </h2>
         )}
-        <button
-          onClick={toggleSidebar}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          style={{
-            flexShrink: 0,
-            width: 28, height: 28,
-            border: 'none', cursor: 'pointer',
-            borderRadius: 8,
-            background: 'rgba(233,30,140,0.12)',
-            color: '#E91E8C',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(233,30,140,0.24)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(233,30,140,0.12)'}
-        >
-          {collapsed
-            ? <FaChevronRight style={{ width: 12, height: 12 }} />
-            : <FaChevronLeft  style={{ width: 12, height: 12 }} />
-          }
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {/* Close button — mobile only */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden"
+              style={{
+                width: 28, height: 28,
+                border: 'none', cursor: 'pointer',
+                borderRadius: 8,
+                background: 'rgba(233,30,140,0.12)',
+                color: '#E91E8C',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              title="Close sidebar"
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          {/* Collapse toggle — desktop only */}
+          <button
+            onClick={toggleSidebar}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden md:flex"
+            style={{
+              flexShrink: 0,
+              width: 28, height: 28,
+              border: 'none', cursor: 'pointer',
+              borderRadius: 8,
+              background: 'rgba(233,30,140,0.12)',
+              color: '#E91E8C',
+              alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(233,30,140,0.24)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(233,30,140,0.12)'}
+          >
+            {collapsed
+              ? <FaChevronRight style={{ width: 12, height: 12 }} />
+              : <FaChevronLeft  style={{ width: 12, height: 12 }} />
+            }
+          </button>
+        </div>
       </div>
 
       {/* ── Nav Items ── */}

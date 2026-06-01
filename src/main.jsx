@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { BrowserRouter, useLocation } from 'react-router-dom'
 
 import './index.css'
@@ -45,9 +45,20 @@ const AppWithInterceptors = () => {
 /* Scroll to top on every route change — React Router v6 pattern */
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const previousPathnameRef = useRef(null);
+
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (previousPathnameRef.current === null) {
+      previousPathnameRef.current = pathname;
+      return;
+    }
+
+    if (previousPathnameRef.current !== pathname) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      previousPathnameRef.current = pathname;
+    }
   }, [pathname]);
+
   return null;
 };
 

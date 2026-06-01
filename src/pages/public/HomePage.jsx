@@ -212,12 +212,12 @@ const FeatureStripCard = ({ icon, title, description, accent = 'pink', delay = 0
 const HeroSection = ({ navigate }) => (
   <section
     className="hero-dark"
-    style={{ minHeight: '92vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '5rem', paddingBottom: '6rem' }}
+    style={{ minHeight: '92vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '5rem', paddingBottom: '6rem', overflow: 'hidden' }}
   >
-    {/* Decorative orbs */}
-    <div className="hero-orb hero-orb-pink" style={{ width: 500, height: 500, top: -120, left: '60%' }} />
-    <div className="hero-orb hero-orb-orange" style={{ width: 360, height: 360, bottom: 0, left: -80 }} />
-    <div className="hero-orb hero-orb-purple" style={{ width: 280, height: 280, top: '30%', right: -60 }} />
+    {/* Decorative orbs — contained so they don't cause horizontal scroll */}
+    <div className="hero-orb hero-orb-pink" style={{ width: 400, height: 400, top: -100, right: -100 }} />
+    <div className="hero-orb hero-orb-orange" style={{ width: 300, height: 300, bottom: 0, left: -80 }} />
+    <div className="hero-orb hero-orb-purple" style={{ width: 220, height: 220, top: '30%', right: -40 }} />
 
     <div className="hero-dark-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
@@ -310,7 +310,7 @@ const HeroSection = ({ navigate }) => (
           </div>
 
           {/* Mock dashboard content */}
-          <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+          <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
             {[
               {
                 label: 'Total Students', value: '1,248',
@@ -341,7 +341,7 @@ const HeroSection = ({ navigate }) => (
             ))}
           </div>
 
-          <div style={{ padding: '0 1.5rem 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+          <div style={{ padding: '0 1.5rem 1.5rem', display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
             {[
               'Class 10-A: 28/30 present',
               'Fee reminder sent to 12 parents',
@@ -365,7 +365,8 @@ const HeroSection = ({ navigate }) => (
 const StatsSection = () => (
   <section style={{ background: 'linear-gradient(135deg, #E91E8C 0%, #FF6B35 100%)', padding: '3.5rem 1rem' }}>
     <div className="max-w-7xl mx-auto px-4">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center', color: '#fff' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem', textAlign: 'center', color: '#fff' }}
+        className="sm:grid-cols-4">
         {STATS.map(({ value, label }, i) => (
           <FadeIn key={label} delay={i * 80}>
             <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 4 }}>{value}</div>
@@ -386,7 +387,7 @@ const FeaturesSection = () => (
       title="Everything your school needs, nothing it doesn't"
       subtitle="Purpose-built for educational institutions — from small coaching centers to large multi-campus schools."
     />
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {FEATURES.map((f, i) => (
         <FeatureStripCard key={f.title} {...f} delay={i * 55} />
       ))}
@@ -403,9 +404,9 @@ const HowItWorksSection = () => (
       title="Up and running in one afternoon"
       subtitle="No lengthy onboarding. No IT consultants. No setup fees."
     />
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', position: 'relative' }}>
-      {/* connector line */}
-      <div style={{ position: 'absolute', top: 40, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(to right, rgba(233,30,140,0.2), rgba(255,107,53,0.2))', zIndex: 0 }} />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" style={{ position: 'relative' }}>
+      {/* connector line — desktop only */}
+      <div className="hidden lg:block" style={{ position: 'absolute', top: 40, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(to right, rgba(233,30,140,0.2), rgba(255,107,53,0.2))', zIndex: 0 }} />
 
       {STEPS.map(({ step, title, description, icon }, i) => (
         <FadeIn key={step} delay={i * 100}>
@@ -458,7 +459,7 @@ const TestimonialsSection = () => (
         </FadeIn>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {TESTIMONIALS.map(({ name, role, initials, gradientA, gradientB, quote, rating }, i) => (
           <FadeIn key={name} delay={i * 70}>
             <div
@@ -518,7 +519,7 @@ const PricingPreviewSection = ({ navigate }) => (
       title="Simple, transparent pricing"
       subtitle="Start free, scale as you grow. No hidden fees, no surprises."
     />
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', maxWidth: 900, margin: '0 auto 2.5rem' }}>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6" style={{ maxWidth: 900, margin: '0 auto 2.5rem' }}>
       {PRICING_PREVIEW.map(({ name, price, students, popular }) => (
         <div
           key={name}
@@ -530,7 +531,6 @@ const PricingPreviewSection = ({ navigate }) => (
             textAlign: 'center',
             position: 'relative',
             boxShadow: popular ? '0 8px 32px rgba(233,30,140,0.18)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transform: popular ? 'scale(1.04)' : 'none',
             transition: 'box-shadow 0.3s, transform 0.3s',
           }}
         >

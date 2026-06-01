@@ -338,6 +338,7 @@ const SchoolSetupDashboard = () => {
                       placeholder={`e.g. 100  (max ${plan.maxStudents})`}
                       value={isSelected ? studentCount : ''}
                       onChange={e => { setStudentCount(e.target.value); setSelectedPlan(plan.id); validateStudentCount(e.target.value, plan.id); }}
+                      onWheel={(e) => e.currentTarget.blur()}
                       onFocus={() => setSelectedPlan(plan.id)}
                       style={{
                         width: '100%', padding: '0.625rem 0.875rem',
@@ -423,6 +424,7 @@ const SchoolSetupDashboard = () => {
                   type="number" min="1" placeholder="e.g. 150"
                   value={studentCount}
                   onChange={e => setStudentCount(e.target.value)}
+                  onWheel={(e) => e.currentTarget.blur()}
                   style={{
                     width: '100%', padding: '0.625rem 0.875rem',
                     border: `1.5px solid ${BORDER}`, borderRadius: 10,

@@ -8,9 +8,9 @@ import NotificationBadge from '../common/NotificationBadge';
 import ThemeToggle from '../common/ThemeToggle';
 import { FEATURES, canRoleAccessFeature } from '../../config/features';
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick }) => {
   const { user, logout } = useContext(AuthContext);
-  const { hasFeature } = useContext(TenantFeaturesContext);
+  const { hasFeature, loading: featureLoading, hasCachedFeatures } = useContext(TenantFeaturesContext);
   const { schoolName } = useContext(TenantConfigContext);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -45,8 +45,10 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const showFeatureSkeletons = featureLoading && !hasCachedFeatures;
+
   return (
-    <nav className="school-navbar">
+    <nav className="school-navbar relative z-50 pointer-events-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Left — Brand + Desktop Links */}
@@ -73,29 +75,40 @@ const Navbar = () => {
             <div className="hidden navbar:ml-8 navbar:flex navbar:items-center navbar:gap-1">
               <Link to="/" className="school-navbar-link px-3 py-2 rounded-lg">Home</Link>
 
-              {user && (
+              {user && showFeatureSkeletons ? (
                 <>
-                  <Link to="/dashboard" className="school-navbar-link px-3 py-2 rounded-lg">Dashboard</Link>
-
-                  {hasFeature(FEATURES.TEACHERS) && canRoleAccessFeature(user?.role, FEATURES.TEACHERS) && (
-                    <Link to="/teachers" className="school-navbar-link px-3 py-2 rounded-lg">Teachers</Link>
-                  )}
-                  {hasFeature(FEATURES.STUDENTS) && canRoleAccessFeature(user?.role, FEATURES.STUDENTS) && (
-                    <Link to="/students" className="school-navbar-link px-3 py-2 rounded-lg">Students</Link>
-                  )}
-                  {hasFeature(FEATURES.ATTENDANCE) && canRoleAccessFeature(user?.role, FEATURES.ATTENDANCE) && (
-                    <Link to="/attendance" className="school-navbar-link px-3 py-2 rounded-lg">Attendance</Link>
-                  )}
-                  {hasFeature(FEATURES.EVENTS) && canRoleAccessFeature(user?.role, FEATURES.EVENTS) && (
-                    <Link to="/events-notices" className="school-navbar-link px-3 py-2 rounded-lg">Events</Link>
-                  )}
-                  {hasFeature(FEATURES.FEES) && canRoleAccessFeature(user?.role, FEATURES.FEES) && (
-                    <Link to="/fees" className="school-navbar-link px-3 py-2 rounded-lg">Fees</Link>
-                  )}
-                  {hasFeature(FEATURES.SALARIES) && canRoleAccessFeature(user?.role, FEATURES.SALARIES) && (
-                    <Link to="/salaries" className="school-navbar-link px-3 py-2 rounded-lg">Salaries</Link>
-                  )}
+                  <div className="ml-2 h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
+                  <div className="h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
+                  <div className="h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
+                  <div className="h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
+                  <div className="h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
+                  <div className="h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse" />
                 </>
+              ) : (
+                user && (
+                  <>
+                    <Link to="/dashboard" className="school-navbar-link px-3 py-2 rounded-lg">Dashboard</Link>
+
+                    {hasFeature(FEATURES.TEACHERS) && canRoleAccessFeature(user?.role, FEATURES.TEACHERS) && (
+                      <Link to="/teachers" className="school-navbar-link px-3 py-2 rounded-lg">Teachers</Link>
+                    )}
+                    {hasFeature(FEATURES.STUDENTS) && canRoleAccessFeature(user?.role, FEATURES.STUDENTS) && (
+                      <Link to="/students" className="school-navbar-link px-3 py-2 rounded-lg">Students</Link>
+                    )}
+                    {hasFeature(FEATURES.ATTENDANCE) && canRoleAccessFeature(user?.role, FEATURES.ATTENDANCE) && (
+                      <Link to="/attendance" className="school-navbar-link px-3 py-2 rounded-lg">Attendance</Link>
+                    )}
+                    {hasFeature(FEATURES.EVENTS) && canRoleAccessFeature(user?.role, FEATURES.EVENTS) && (
+                      <Link to="/events-notices" className="school-navbar-link px-3 py-2 rounded-lg">Events</Link>
+                    )}
+                    {hasFeature(FEATURES.FEES) && canRoleAccessFeature(user?.role, FEATURES.FEES) && (
+                      <Link to="/fees" className="school-navbar-link px-3 py-2 rounded-lg">Fees</Link>
+                    )}
+                    {hasFeature(FEATURES.SALARIES) && canRoleAccessFeature(user?.role, FEATURES.SALARIES) && (
+                      <Link to="/salaries" className="school-navbar-link px-3 py-2 rounded-lg">Salaries</Link>
+                    )}
+                  </>
+                )
               )}
             </div>
           </div>
@@ -184,8 +197,24 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <div className="flex items-center navbar:hidden">
+          {/* Mobile controls */}
+          <div className="flex items-center gap-1 navbar:hidden">
+            <ThemeToggle />
+            {user && <NotificationBadge />}
+            {/* Sidebar toggle — authenticated only */}
+            {user && (
+              <button
+                onClick={onMenuClick}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                title="Open sidebar"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            )}
+            {/* Nav-links dropdown toggle */}
             <button
               onClick={toggleMenu}
               className="p-2 rounded-lg transition-colors"
@@ -198,7 +227,7 @@ const Navbar = () => {
                 </svg>
               ) : (
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8" />
                 </svg>
               )}
             </button>
@@ -210,7 +239,7 @@ const Navbar = () => {
       {isOpen && (
         <div
           className="navbar:hidden border-t animate-fade-in"
-          style={{ borderColor: 'var(--border-default)', background: '#fff' }}
+          style={{ borderColor: 'var(--border-default)', background: 'var(--bg-card)' }}
         >
           <div className="px-3 pt-2 pb-3 space-y-1">
             {[

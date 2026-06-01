@@ -14,6 +14,11 @@ const AuthLogin = () => {
   const [error, setError] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const isGoogleLoginEnabled = Boolean(
+    googleClientId &&
+    !googleClientId.includes('<your-google-oauth-client-id>')
+  );
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -230,8 +235,28 @@ const AuthLogin = () => {
             <div className="divider">or continue with</div>
 
             <div style={{ display: 'flex', justifyItems: 'center', width: '100%', alignItems: 'center', alignContent: 'center', justifyContent: 'center' }}>
-              <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError}
-                theme="outline" size="large" width="372" text="continue_with" />
+              {isGoogleLoginEnabled ? (
+                <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError}
+                  theme="outline" size="large" width="372" text="continue_with" />
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  style={{
+                    width: '372px',
+                    maxWidth: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 8,
+                    border: '1px solid #D1D5DB',
+                    background: '#F9FAFB',
+                    color: '#6B7280',
+                    cursor: 'not-allowed',
+                    fontWeight: 600,
+                  }}
+                >
+                  Google login unavailable in this environment
+                </button>
+              )}
             </div>
           </form>
         </div>

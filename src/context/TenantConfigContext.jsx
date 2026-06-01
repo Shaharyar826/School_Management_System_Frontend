@@ -2,24 +2,29 @@ import { createContext, useState, useEffect, useContext, useCallback } from 'rea
 import axios from 'axios';
 import AuthContext from './AuthContext';
 import { DEFAULT_FEATURES } from '../config/features';
+import { cacheKeys, readCache, resolveTenantIdentifier, writeCache } from '../utils/appCache';
 
 const TenantConfigContext = createContext();
 
 export const TenantConfigProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
-  const [config, setConfig] = useState({
-    schoolName: 'Loading...',
-    subdomain: null,
-    features: DEFAULT_FEATURES,
-    branding: {
-      logo: null,
-      primaryColor: '#3B82F6',
-      secondaryColor: '#1E40AF',
-      theme: 'light'
-    },
-    status: 'trial',
-    loading: true,
-    error: null
+  const tenantIdentifier = resolveTenantIdentifier();
+  const [config, setConfig] = useState(() => {
+    const cached = tenantIdentifier ? readCache(cacheKeys.tenantConfig(tenantIdentifier), null) : null;
+    return {
+      schoolName: cached?.schoolName || 'Loading...',
+      subdomain: cached?.subdomain || null,
+      features: cached?.features || DEFAULT_FEATURES,
+      branding: cached?.branding || {
+        logo: null,
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1E40AF',
+        theme: 'light'
+      },
+      status: cached?.status || 'trial',
+      loading: !cached,
+      error: null
+    };
   });
 
   const getTenantIdentifier = useCallback(() => {
@@ -39,13 +44,16 @@ export const TenantConfigProvider = ({ children }) => {
   }, []);
 
   const fetchTenantConfig = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
+
     try {
-      setConfig(prev => ({ ...prev, loading: true, error: null }));
+      const cachedConfig = tenantIdentifier ? readCache(cacheKeys.tenantConfig(tenantIdentifier), null) : null;
+      setConfig(prev => ({ ...prev, loading: !cachedConfig, error: null }));
       
-      const tenantIdentifier = getTenantIdentifier();
+      const tenantIdent = getTenantIdentifier();
       const headers = {};
-      if (tenantIdentifier && tenantIdentifier !== 'www') {
-        headers['X-Tenant'] = tenantIdentifier;
+      if (tenantIdent && tenantIdent !== 'www') {
+        headers['X-Tenant'] = tenantIdent;
       }
       
       const response = await axios.get('/api/school-settings', { headers });
@@ -67,50 +75,33 @@ export const TenantConfigProvider = ({ children }) => {
           loading: false,
           error: null
         };
-        localStorage.setItem('tenant_config', JSON.stringify(newConfig));
+        writeCache(cacheKeys.tenantConfig(tenant || tenantIdent || 'global'), newConfig);
         setConfig(newConfig);
       }
     } catch (error) {
       console.error('Failed to fetch tenant config:', error);
-      
-      // Try to load from cache
-      const cachedConfig = localStorage.getItem('tenant_config');
+      const cachedConfig = tenantIdentifier ? readCache(cacheKeys.tenantConfig(tenantIdentifier), null) : null;
       if (cachedConfig) {
-        try {
-          const parsed = JSON.parse(cachedConfig);
-          setConfig({ ...parsed, loading: false, error: error.message });
-        } catch {
-          setConfig(prev => ({ 
-            ...prev, 
-            loading: false, 
-            error: 'Failed to load tenant configuration',
-            schoolName: 'School Management System'
-          }));
-        }
+        setConfig({ ...cachedConfig, loading: false, error: error.message });
       } else {
-        setConfig(prev => ({ 
-          ...prev, 
-          loading: false, 
-          error: error.message,
-          schoolName: 'School Management System'
-        }));
+        setConfig(prev => ({ ...prev, loading: false, error: error.message, schoolName: 'School Management System' }));
       }
     }
-  }, [getTenantIdentifier]);
+  }, [getTenantIdentifier, isAuthenticated, tenantIdentifier, user]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchTenantConfig();
     } else {
       // Load basic config for non-authenticated users
-      const tenantIdentifier = getTenantIdentifier();
+      const tenantIdent = getTenantIdentifier();
       setConfig(prev => ({
         ...prev,
-        subdomain: tenantIdentifier,
+        subdomain: tenantIdent,
         loading: false
       }));
     }
-  }, [isAuthenticated, user, fetchTenantConfig, getTenantIdentifier]);
+  }, [isAuthenticated, user, getTenantIdentifier, fetchTenantConfig]);
 
   const hasFeature = useCallback((feature) => {
     return config.features.includes(feature);

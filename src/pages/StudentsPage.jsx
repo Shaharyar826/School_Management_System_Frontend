@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import ProfileAvatarImage from '../components/common/ProfileAvatarImage';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 import { useStudents, useDeleteStudent } from '../hooks/useStudents';
 import { useStudentLimit } from '../hooks/useStudentLimit';
 import { useClasses, useSections } from '../hooks/useFilters';
@@ -444,7 +444,7 @@ const StudentsPage = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden">
-                            <ProfileAvatarImage
+                            <ProfileAvatar
                               profileImage={student.user?.profileImage}
                               name={student.user?.name}
                               fallbackLetter={student.user?.name?.charAt(0) || 'S'}
@@ -521,7 +521,7 @@ const StudentsPage = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden">
-                            <ProfileAvatarImage
+                            <ProfileAvatar
                               profileImage={student.user?.profileImage}
                               name={student.user?.name}
                               fallbackLetter={student.user?.name?.charAt(0) || 'S'}
@@ -602,7 +602,7 @@ const StudentsPage = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden">
-                                <ProfileAvatarImage
+                                <ProfileAvatar
                                   profileImage={student.user?.profileImage}
                                   name={student.user?.name}
                                   fallbackLetter={student.user?.name?.charAt(0) || 'S'}

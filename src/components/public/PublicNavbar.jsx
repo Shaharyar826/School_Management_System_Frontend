@@ -80,14 +80,15 @@ const PublicNavbar = () => {
     left:                 0,
     right:                0,
     zIndex:               50,
+    pointerEvents:       'none',
     // Animate background, blur, shadow and border together
     transition:          'background 0.35s ease, backdrop-filter 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
     // Before scroll: solid white (0.99 opacity) — blur would have nothing to show through
     // After scroll:  semi-transparent (0.72 opacity) — so blur creates visible frosted glass
-    background:          scrolled ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.99)',
+    background:          scrolled ? 'rgba(255,255,255,0.92)' : '#ffffff',
     backdropFilter:      scrolled ? 'blur(20px) saturate(180%)' : 'none',
     WebkitBackdropFilter:scrolled ? 'blur(20px) saturate(180%)' : 'none',
-    borderBottom:        scrolled ? '1px solid rgba(229,231,235,0.6)' : '1px solid rgba(229,231,235,0.3)',
+    borderBottom:        '1px solid rgba(229,231,235,0.6)',
     boxShadow:           scrolled
       ? '0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)'
       : 'none',
@@ -126,6 +127,7 @@ const PublicNavbar = () => {
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'space-between',
+          pointerEvents:  'auto',
         }}
       >
         <Logo />
@@ -202,7 +204,7 @@ const PublicNavbar = () => {
 
       {/* Mobile menu — hidden on desktop */}
       {menuOpen && !isDesktop && (
-        <div style={{ background: '#fff', borderTop: '1px solid #F3F4F6', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} className="md:hidden">
+        <div style={{ background: '#fff', borderTop: '1px solid #F3F4F6', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', pointerEvents: 'auto' }} className="md:hidden">
           <ul style={{ padding: '0.75rem 1rem', listStyle: 'none', margin: 0 }}>
             {NAV_LINKS.map(({ label, to }) => (
               <li key={to}>

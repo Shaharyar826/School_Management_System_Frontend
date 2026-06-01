@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import ConfirmationModal from '../common/ConfirmationModal';
+import ConfirmationModal from '../common/ConfirmationDialog';
 
 const PasswordResetRequests = () => {
   const navigate = useNavigate();

@@ -71,8 +71,8 @@ export const queryKeys = {
   // Dashboard
   dashboard: {
     all: () => ['dashboard'],
-    stats: (role) => [...queryKeys.dashboard.all(), 'stats', role],
-    charts: (role, period) => [...queryKeys.dashboard.all(), 'charts', role, period],
+    stats: (role, tenant) => [...queryKeys.dashboard.all(), 'stats', tenant || 'global', role],
+    charts: (role, period, tenant) => [...queryKeys.dashboard.all(), 'charts', tenant || 'global', role, period],
   },
   
   // Classes and Sections (filters)

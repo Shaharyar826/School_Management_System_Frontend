@@ -1,19 +1,22 @@
 import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import AuthContext from './AuthContext';
+import { cacheKeys, readCache, resolveTenantIdentifier, writeCache } from '../utils/appCache';
 
 const SetupContext = createContext();
 
 export const SetupProvider = ({ children }) => {
   const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext);
+  const tenantIdentifier = resolveTenantIdentifier();
+  const cachedSetup = tenantIdentifier ? readCache(cacheKeys.setupStatus(tenantIdentifier), null) : null;
 
-  const [setupComplete, setSetupComplete]     = useState(null);
-  const [trialActive, setTrialActive]         = useState(false);
-  const [trialDaysLeft, setTrialDaysLeft]     = useState(0);
-  const [trialEndsAt, setTrialEndsAt]         = useState(null);
-  const [subscriptionPlan, setSubscriptionPlan] = useState('trial');
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
-  const [loading, setLoading]                 = useState(true);
+  const [setupComplete, setSetupComplete]     = useState(cachedSetup?.setupComplete ?? null);
+  const [trialActive, setTrialActive]         = useState(cachedSetup?.trialActive ?? false);
+  const [trialDaysLeft, setTrialDaysLeft]     = useState(cachedSetup?.trialDaysLeft ?? 0);
+  const [trialEndsAt, setTrialEndsAt]         = useState(cachedSetup?.trialEndsAt ?? null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState(cachedSetup?.subscriptionPlan ?? 'trial');
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(cachedSetup?.hasActiveSubscription ?? false);
+  const [loading, setLoading]                 = useState(!cachedSetup);
   const [error, setError]                     = useState(null);
 
   const getTenantHeader = () => {
@@ -67,23 +70,42 @@ export const SetupProvider = ({ children }) => {
         if (!t) {
           // No tenant yet — registration in progress
           setSetupComplete(false);
+          if (!cachedSetup) setLoading(false);
           return;
         }
-        setSetupComplete(t.onboarding?.onboardingComplete || false);
-        setTrialActive(t.billing?.isTrialActive || false);
-        setTrialDaysLeft(t.billing?.trialDaysLeft || 0);
-        setTrialEndsAt(t.billing?.trialEndsAt || null);
-        setSubscriptionPlan(t.billing?.plan || 'trial');
-        setHasActiveSubscription(t.billing?.hasActiveSubscription || false);
+        const nextSetup = {
+          setupComplete: t.onboarding?.onboardingComplete || false,
+          trialActive: t.billing?.isTrialActive || false,
+          trialDaysLeft: t.billing?.trialDaysLeft || 0,
+          trialEndsAt: t.billing?.trialEndsAt || null,
+          subscriptionPlan: t.billing?.plan || 'trial',
+          hasActiveSubscription: t.billing?.hasActiveSubscription || false,
+          updatedAt: Date.now(),
+        };
+
+        setSetupComplete(nextSetup.setupComplete);
+        setTrialActive(nextSetup.trialActive);
+        setTrialDaysLeft(nextSetup.trialDaysLeft);
+        setTrialEndsAt(nextSetup.trialEndsAt);
+        setSubscriptionPlan(nextSetup.subscriptionPlan);
+        setHasActiveSubscription(nextSetup.hasActiveSubscription);
+        writeCache(cacheKeys.setupStatus(tenant || tenantIdentifier || 'global'), nextSetup);
       }
     } catch (err) {
       setError(err.message);
-      // On error, don't block the user — fail open
-      setSetupComplete(true);
+      // Fail closed to avoid bypassing setup/billing guards on transient errors.
+      if (!cachedSetup) {
+        setSetupComplete(false);
+        setTrialActive(false);
+        setTrialDaysLeft(0);
+        setTrialEndsAt(null);
+        setSubscriptionPlan('trial');
+        setHasActiveSubscription(false);
+      }
     } finally {
-      setLoading(false);
+      if (!cachedSetup) setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [cachedSetup, isAuthenticated, tenantIdentifier, user]);
 
   useEffect(() => {
     if (authLoading) return;

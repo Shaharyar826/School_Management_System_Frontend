@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Spinner from '../components/common/Spinner';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
@@ -232,7 +232,7 @@ const NotificationsPage = () => {
 
         {loading ? (
           <div className="flex justify-center items-center py-8">
-            <Spinner />
+            <LoadingSpinner />
           </div>
         ) : error ? (
           <div className="mt-4 school-alert school-alert-error">

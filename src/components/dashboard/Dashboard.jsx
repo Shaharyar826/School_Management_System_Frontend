@@ -8,6 +8,7 @@ import ParentDashboard from '../parent/ParentDashboard';
 import NoticeList from '../notices/NoticeList';
 import { useDashboardStats } from '../../hooks/useDashboard';
 import ComplaintModal from '../common/ComplaintModal';
+import DashboardSkeleton from '../common/DashboardSkeleton';
 
 /* ── StatCard ────────────────────────────────────────────────── */
 const StatCard = ({ label, value, icon, iconClass, link, linkLabel, topColor }) => (
@@ -72,6 +73,10 @@ const Dashboard = () => {
   const notices = dashboardData?.recentNotices || [];
   const error   = queryError?.response?.data?.message || (queryError ? 'Failed to load dashboard data' : '');
 
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
   const statCards = [
     {
       label: 'Total Students',
@@ -124,18 +129,18 @@ const Dashboard = () => {
         {/* ── Welcome Banner ── */}
         <div className="welcome-card" style={{ marginBottom: '2rem' }}>
           <div className="welcome-card-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', fontWeight: 500, marginBottom: 4 }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: 6 }}>
+              <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: 6 }}>
                 Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.name?.split(' ')[0] || 'there'}
               </h1>
               <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1rem' }}>
                 Here's what's happening at your school today.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <Link to="/events-notices" style={{ padding: '0.625rem 1.25rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9999, color: '#fff', fontSize: '0.875rem', fontWeight: 600, textDecoration: 'none', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
                 Post Notice
@@ -159,7 +164,7 @@ const Dashboard = () => {
         )}
 
         {/* ── Stats Grid ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
           {loading
             ? [...Array(4)].map((_, i) => <StatSkeleton key={i} />)
             : statCards.map((s, i) => <StatCard key={i} {...s} />)
@@ -167,10 +172,10 @@ const Dashboard = () => {
         </div>
 
         {/* ── Bottom Section ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Notices */}
-          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="card lg:col-span-2" style={{ overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem', borderBottom: '1px solid #E5E7EB' }}>
               <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, color: '#111827' }}>
                 Recent Events & Notices

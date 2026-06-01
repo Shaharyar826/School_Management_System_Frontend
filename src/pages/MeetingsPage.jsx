@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Spinner from '../components/common/Spinner';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 const MeetingsPage = () => {
@@ -265,7 +265,7 @@ const MeetingsPage = () => {
 
         {loading ? (
           <div className="flex justify-center items-center py-8">
-            <Spinner />
+            <LoadingSpinner />
           </div>
         ) : error ? (
           <div className="mt-4 school-alert school-alert-error">

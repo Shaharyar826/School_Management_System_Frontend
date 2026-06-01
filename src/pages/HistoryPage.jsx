@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
-import Spinner from '../components/common/Spinner';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const HistoryPage = () => {
   const { user } = useContext(AuthContext);
@@ -213,7 +213,7 @@ const HistoryPage = () => {
         
         {loading ? (
           <div className="flex justify-center items-center py-8">
-            <Spinner />
+            <LoadingSpinner />
           </div>
         ) : error ? (
           <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4">

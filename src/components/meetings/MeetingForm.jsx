@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import FormInput from '../common/FormInput';
-import Spinner from '../common/Spinner';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const MeetingForm = () => {
   const { user } = useContext(AuthContext);
@@ -184,7 +184,7 @@ const MeetingForm = () => {
   if (fetchLoading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Spinner />
+        <LoadingSpinner />
       </div>
     );
   }

@@ -22,20 +22,17 @@ import { TenantConfigProvider } from './context/TenantConfigContext'
 import { StripeProvider } from './context/StripeContext'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import EduFlowLanding from './components/saas/EduFlowLanding'
 import PublicLayout from './components/public/PublicLayout'
 import TenantRegistration from './components/auth/TenantRegistration'
 import EmailVerification from './components/auth/EmailVerification'
-import PricingPage from './components/saas/PricingPage'
 
-// New public website pages
+// SaaS public pages
 import HomePage from './pages/public/HomePage'
 import PublicPricingPage from './pages/public/PricingPage'
 import PublicAboutPage from './pages/public/AboutPage'
 import PublicContactPage from './pages/public/ContactPage'
 import PrivacyPage from './pages/public/PrivacyPage'
 import TermsPage from './pages/public/TermsPage'
-import PricingCalculator from './components/billing/PricingCalculator'
 import SchoolSetupDashboard from './components/onboarding/SchoolSetupDashboard'
 import TrialExpiredPage from './pages/auth/TrialExpiredPage'
 import SuperAdminLogin from './components/super-admin/SuperAdminLogin'
@@ -54,9 +51,6 @@ import SuperAdminContacts from './components/super-admin/SuperAdminContacts'
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))
 const SubscriptionSuccessPage = lazy(() => import('./pages/SubscriptionSuccessPage'))
 const SubscriptionCancelPage = lazy(() => import('./pages/SubscriptionCancelPage'))
-
-// Import landing page components
-import LandingPage from './pages/LandingPage'
 
 // Lazy load all page components to improve performance
 const EventsNoticesPage = lazy(() => import('./pages/EventsNoticesPage'))
@@ -88,14 +82,6 @@ const ContentManagementPage = lazy(() => import('./pages/ContentManagementPage')
 
 const TeacherDetailsPage = lazy(() => import('./pages/TeacherDetailsPage'))
 
-// Lazy load public pages
-const AboutPage = lazy(() => import('./pages/AboutPage'))
-const ContactPage = lazy(() => import('./pages/ContactPage'))
-const AdmissionsPage = lazy(() => import('./pages/AdmissionsPage'))
-const AcademicsPage = lazy(() => import('./pages/AcademicsPage'))
-const FacultyPage = lazy(() => import('./pages/FacultyPage'))
-const EventsPage = lazy(() => import('./pages/EventsPage'))
-const GalleryPage = lazy(() => import('./pages/GalleryPage'))
 const FeatureRestrictedPage = lazy(() => import('./pages/FeatureRestrictedPage'))
 
 // Lazy load upload pages
@@ -137,6 +123,18 @@ const LoadingSpinner = () => (
   </div>
 )
 
+const NotFoundPage = () => (
+  <PublicLayout>
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="text-center max-w-xl">
+        <p className="text-sm font-semibold tracking-wide uppercase text-pink-600">404</p>
+        <h1 className="mt-3 text-4xl font-bold text-gray-900">Page not found</h1>
+        <p className="mt-4 text-gray-600">The page you are looking for does not exist or has been moved.</p>
+      </div>
+    </div>
+  </PublicLayout>
+)
+
 function App() {
   const { isAuthenticated, loading } = useContext(AuthContext);
 
@@ -174,13 +172,8 @@ function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
 
-          {/* Legacy routes */}
-          <Route path="/old" element={<EduFlowLanding />} />
           <Route path="/signup" element={<TenantRegistration />} />
           <Route path="/verify-email" element={<EmailVerification />} />
-          <Route path="/pricing-calculator" element={<PublicLayout><PricingPage /></PublicLayout>} />
-          <Route path="/calculator" element={<PublicLayout><PricingCalculator /></PublicLayout>} />
-          <Route path="/home" element={<PublicLayout><LandingPage /></PublicLayout>} />
           
           {/* Super Admin Portal */}
           <Route path="/super-admin/login" element={<SuperAdminLogin />} />
@@ -244,47 +237,6 @@ function App() {
             <TempPasswordReset />
           </PrivateRoute>
         } />
-        <Route path="/admissions" element={
-          <PublicLayout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <AdmissionsPage />
-          </Suspense>
-          </PublicLayout>
-        } />
-        <Route path="/academics" element={
-          <PublicLayout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <AcademicsPage />
-          </Suspense>
-          </PublicLayout>
-        } />
-        <Route path="/faculty" element={
-          <PublicLayout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <FacultyPage />
-          </Suspense>
-          </PublicLayout>
-        } />
-        <Route path="/events" element={
-          <PublicLayout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <EventsPage />
-          </Suspense>
-          </PublicLayout>
-        } />
-        <Route path="/gallery" element={
-          <PublicLayout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <GalleryPage />
-          </Suspense>
-          </PublicLayout>
-        } />
-        {/* <Route path="/public-button-test" element={
-          <Suspense fallback={<LoadingSpinner />}>
-            <PublicButtonTestPage />
-          </Suspense>
-        } /> */}
-
         {/* Feature Restricted Route */}
         <Route path="/feature-restricted" element={
           <Suspense fallback={<LoadingSpinner />}>
@@ -947,6 +899,8 @@ function App() {
             </Layout>
           </PrivateRoute>
         } /> */}
+
+        <Route path="*" element={<NotFoundPage />} />
 
 
         </Routes>

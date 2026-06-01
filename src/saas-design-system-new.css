@@ -573,11 +573,13 @@ h1,h2,h3,h4,h5,h6 {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255,255,255,0.92) !important;
+  background: var(--bg-card) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border-bottom: 1px solid var(--ds-border) !important;
   box-shadow: var(--ds-shadow-nav);
+  pointer-events: auto;
+  isolation: isolate;
 }
 
 .school-navbar-brand {
@@ -905,7 +907,7 @@ h1,h2,h3,h4,h5,h6 {
 
 /* ══ MODAL ══════════════════════════════════════════════════ */
 
-body.modal-open { overflow: hidden; touch-action: none; }
+body.modal-open { overflow: hidden; touch-action: none; pointer-events: none; }
 body.modal-open > *:not(.modal-portal-container) { pointer-events: none; }
 .modal-portal-container { position: fixed; inset: 0; z-index: 99999; pointer-events: none; }
 .modal-portal { position: fixed; inset: 0; z-index: 99999; pointer-events: auto; }

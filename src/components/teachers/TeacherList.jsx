@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import { useNavigation } from '../../context/NavigationContext';
-import ConfirmationModal from '../common/ConfirmationModal';
+import ConfirmationModal from '../common/ConfirmationDialog';
 
 const TeacherList = () => {
   const { user } = useContext(AuthContext);

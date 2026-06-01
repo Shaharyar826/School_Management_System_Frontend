@@ -16,8 +16,8 @@ const ForgotPassword = () => {
     setSuccess('');
 
     try {
-      // Better Auth standard password reset — sends an email with a reset link
-      await axios.post('/api/auth/forget-password', {
+      // Better Auth standard password reset endpoint
+      await axios.post('/api/auth/request-password-reset', {
         email,
         redirectTo: `${window.location.origin}/reset-password`,
       }, { timeout: 12000 });

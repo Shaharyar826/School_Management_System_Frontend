@@ -1,17 +1,28 @@
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { cacheKeys, clearTenantCaches, readCache, resolveTenantIdentifier, writeCache } from '../utils/appCache';
 
 const AuthContext = createContext();
 
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+const ACTIVITY_KEY = 'ba_last_activity';
+
+const getCachedAuthSession = () => {
+  const tenant = resolveTenantIdentifier();
+  if (!tenant) return null;
+
+  return readCache(cacheKeys.authSession(tenant), null);
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const cachedSession = getCachedAuthSession();
+  const cachedToken = typeof window !== 'undefined' ? localStorage.getItem('ba_token') : null;
+
+  const [user, setUser] = useState(cachedSession?.user || null);
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(cachedSession?.user && cachedToken));
+  const [loading, setLoading] = useState(!(cachedSession?.user && cachedToken));
   const [error, setError] = useState(null);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
-
-  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
-  const ACTIVITY_KEY = 'ba_last_activity';
 
   const getStoredActivity = useCallback(() => {
     const stored = window.sessionStorage.getItem(ACTIVITY_KEY) || localStorage.getItem(ACTIVITY_KEY);
@@ -22,12 +33,12 @@ export const AuthProvider = ({ children }) => {
     const value = String(timestamp);
     try {
       window.sessionStorage.setItem(ACTIVITY_KEY, value);
-    } catch (error) {
+    } catch {
       // Ignore storage failures in private mode
     }
     try {
       localStorage.setItem(ACTIVITY_KEY, value);
-    } catch (error) {
+    } catch {
       // Ignore storage failures in private mode
     }
     return timestamp;
@@ -36,25 +47,32 @@ export const AuthProvider = ({ children }) => {
   const clearStoredActivity = useCallback(() => {
     try {
       window.sessionStorage.removeItem(ACTIVITY_KEY);
-    } catch (error) {
+    } catch {
       // Ignore storage failures
     }
     try {
       localStorage.removeItem(ACTIVITY_KEY);
-    } catch (error) {
+    } catch {
       // Ignore storage failures
     }
+  }, []);
+
+  const persistAuthSession = useCallback((userData, token, tenant) => {
+    if (!userData) return;
+
+    const resolvedTenant = tenant || userData.tenant?.subdomain || null;
+    writeCache(cacheKeys.authSession(resolvedTenant), {
+      user: userData,
+      isAuthenticated: true,
+      tenant: resolvedTenant,
+      updatedAt: Date.now(),
+    });
   }, []);
 
   const isSessionExpired = useCallback(() => {
     const lastActivity = getStoredActivity();
     return lastActivity ? (Date.now() - lastActivity) > INACTIVITY_TIMEOUT_MS : false;
   }, [getStoredActivity]);
-
-  const updateLastActivity = useCallback(() => {
-    if (!isAuthenticated) return;
-    setStoredActivity();
-  }, [isAuthenticated, setStoredActivity]);
 
   // Set token in axios headers — token is managed via httpOnly cookie by Better Auth.
   // We no longer store it in localStorage to prevent XSS token theft.
@@ -120,17 +138,19 @@ export const AuthProvider = ({ children }) => {
         }
         if (savedToken) axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
         setIsAuthenticated(true);
+        persistAuthSession(userData, savedToken, userData.tenant?.subdomain || savedTenant || null);
         setStoredActivity();
       }
-    } catch (err) {
+    } catch {
       localStorage.removeItem('tenant');
       clearStoredActivity();
       setUser(null);
       setIsAuthenticated(false);
+      clearTenantCaches(savedTenant);
     } finally {
       setLoading(false);
     }
-  }, [clearStoredActivity, isSessionExpired, setStoredActivity]);
+  }, [clearStoredActivity, isSessionExpired, persistAuthSession, setStoredActivity]);
 
   useEffect(() => {
     loadUser();
@@ -181,6 +201,7 @@ export const AuthProvider = ({ children }) => {
         setUser(data);
         setIsAuthenticated(true);
         setEmailVerificationRequired(false);
+        persistAuthSession(data, token, data.tenant?.subdomain || formData.tenantIdentifier || null);
         setStoredActivity();
         return { success: true, redirectTo: data.redirectTo, user: data };
       }
@@ -206,7 +227,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [persistAuthSession, setStoredActivity]);
 
   // Google Sign In
   const googleSignIn = useCallback(async (credential, tenantIdentifier) => {
@@ -223,10 +244,14 @@ export const AuthProvider = ({ children }) => {
 
       if (res.data.success) {
         const { data, token } = res.data;
-        if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        if (token) {
+          localStorage.setItem('ba_token', token);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
         localStorage.setItem('tenant', data.tenant?.subdomain || tenantIdentifier || '');
         setUser(data);
         setIsAuthenticated(true);
+        persistAuthSession(data, token, data.tenant?.subdomain || tenantIdentifier || null);
         setStoredActivity();
         return { success: true, redirectTo: data.redirectTo, user: data };
       }
@@ -238,7 +263,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [persistAuthSession, setStoredActivity]);
 
   // Logout
   const logout = useCallback(async () => {
@@ -251,13 +276,14 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setEmailVerificationRequired(false);
       setError(null);
+      clearTenantCaches(localStorage.getItem('tenant') || user?.tenant?.subdomain || null);
       localStorage.removeItem('tenant');
       localStorage.removeItem('ba_token');
       clearStoredActivity();
       delete axios.defaults.headers.common['Authorization'];
       delete axios.defaults.headers.common['X-Tenant'];
     }
-  }, [clearStoredActivity]);
+  }, [clearStoredActivity, user?.tenant?.subdomain]);
 
   const expireSession = useCallback(async () => {
     try {
@@ -315,7 +341,7 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated, setStoredActivity, expireSession]);
 
   // Email verification — Better Auth handles via /api/auth/verify-email
-  const verifyEmail = useCallback(async (token, tenantIdentifier) => {
+  const verifyEmail = useCallback(async (token) => {
     try {
       setLoading(true);
       const res = await axios.get(`/api/auth/verify-email?token=${token}&callbackURL=/`);

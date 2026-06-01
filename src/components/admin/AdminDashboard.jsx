@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import TenantConfigContext from '../../context/TenantConfigContext';
-import ConfirmationModal from '../common/ConfirmationModal';
+import ConfirmationModal from '../common/ConfirmationDialog';
 import PasswordResetRequests from './PasswordResetRequests';
 import NoticeList from '../notices/NoticeList';
 import { useDashboardStats } from '../../hooks/useDashboard';
 import ComplaintModal from '../common/ComplaintModal';
+import DashboardSkeleton from '../common/DashboardSkeleton';
 
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -79,6 +80,10 @@ const AdminDashboard = () => {
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
+  }
+
+  if (loading) {
+    return <DashboardSkeleton />;
   }
 
   return (
