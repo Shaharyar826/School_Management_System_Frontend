@@ -30,7 +30,7 @@ const SuperAdminSettings = () => {
   const defaultSettings = {
     general: {
       platformName: 'EduFlow',
-      supportEmail: 'support@eduflow.com',
+      supportEmail: 'support@learnexes.com',
       maintenanceMode: false,
       allowNewRegistrations: true,
       defaultTrialDays: 14
@@ -41,7 +41,7 @@ const SuperAdminSettings = () => {
       secure: false,
       username: '',
       password: '',
-      fromEmail: 'noreply@eduflow.com',
+      fromEmail: 'noreply@learnexes.com',
       fromName: 'EduFlow'
     },
     oauth: {

@@ -1,81 +1,180 @@
-/* Floating Label Input Styles — v2 (SaaS-compatible)
-   Green focus ring replaced with brand-pink.
+/* ============================================================
+   Floating Label — Notch Pattern (single source of truth)
+   JS drives .is-floating and .is-focused on the container.
+   No reliance on :not(:placeholder-shown) — avoids all
+   browser quirks with space placeholders.
    ============================================================ */
 
+/* ── Container ─────────────────────────────────────────────── */
 .floating-input-container {
   position: relative;
-  margin-bottom: 1.5rem;
 }
 
-/* Base input styling */
+/* ── Input ──────────────────────────────────────────────────── */
 .floating-input {
+  display: block;
   width: 100%;
-  padding: 0.75rem 1rem;
-  color: var(--text-primary, #111827);
-  background: transparent;
-  border: 1.5px solid var(--border-default, #E5E7EB);
-  border-radius: 0.5rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 0.875rem 1rem 0.875rem 1rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  color: #111827;
+  background: #fff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
   outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  box-sizing: border-box;
 }
 
-/* Focus — brand pink */
-.floating-input:focus {
-  border-color: var(--brand, #E91E8C) !important;
-  box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.18) !important;
-  animation: none !important;
+.floating-input::placeholder {
+  color: transparent;
 }
 
-/* Floating label base */
+.floating-input:hover:not(:focus) {
+  border-color: #D1D5DB;
+}
+
+/* ── Label at rest — centered inside the input ──────────────── */
 .floating-input-container label {
-  color: var(--text-muted, #9CA3AF);
-  transition: all 0.2s ease;
-  transform: none;
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: #9CA3AF;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 3;
+  background: transparent;
+  padding: 0;
+  transition:
+    top 0.18s ease,
+    transform 0.18s ease,
+    font-size 0.18s ease,
+    color 0.18s ease,
+    background 0.18s ease,
+    padding 0.18s ease,
+    left 0.18s ease;
 }
 
-/* Float label on focus or value present */
-.floating-input:focus ~ label,
-.floating-input:not(:placeholder-shown) ~ label {
-  font-size: 0.8125rem;
-  color: var(--brand, #E91E8C);
-  background: var(--bg-card, #fff);
-  padding: 0 4px;
-  top: -0.55rem;
-  left: 0.75rem;
-  transform: none;
+/* ── Notch outline (replaces visible input border) ──────────── */
+.floating-notch .floating-input {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
-/* Autofill */
-.floating-input:-webkit-autofill ~ label {
-  font-size: 0.8125rem;
-  color: var(--brand, #E91E8C);
-  background: var(--bg-card, #fff);
-  padding: 0 4px;
-  top: -0.55rem;
-  left: 0.75rem;
+/* Ensure the input border stays transparent on focus —
+   input-glow.css applies border-color !important to all input:focus;
+   this higher-specificity rule wins to preserve the notch appearance. */
+.floating-notch .floating-input:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
-/* ── Dark mode ──────────────────────────────────────────────── */
-
-html[data-theme='dark'] .floating-input-container label {
-  color: var(--text-muted, #9CA3AF);
+.floating-notch .floating-input-outline {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0 0.625rem;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
+.floating-notch .floating-input-outline legend {
+  display: block;
+  max-width: 0;
+  padding: 0;
+  height: 0.75rem;
+  margin-left: 0.375rem;
+  overflow: hidden;
+  white-space: nowrap;
+  visibility: hidden;
+  transition: max-width 0.18s ease;
+  font-size: 0.75rem;
+}
+
+.floating-notch .floating-input-outline legend span {
+  display: inline-block;
+  padding: 0 0.25rem;
+}
+
+/* ── Hover on notch ─────────────────────────────────────────── */
+.floating-notch:not(.is-focused):not(.is-floating):hover .floating-input-outline {
+  border-color: #D1D5DB;
+}
+
+/* ── FOCUSED state ──────────────────────────────────────────── */
+.floating-notch.is-focused .floating-input-outline {
+  border-color: #E91E8C;
+  box-shadow: 0 0 0 2.5px rgba(233, 30, 140, 0.12);
+}
+
+/* ── FLOATING state (focused OR has value) ──────────────────── */
+.floating-notch.is-floating .floating-input-outline legend {
+  max-width: 1000px;
+  /* visibility stays hidden — the <label> element handles visual display;
+     legend only widens to create the border notch gap */
+  visibility: hidden;
+}
+
+.floating-notch.is-floating label {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.76rem;
+  color: #E91E8C;
+  background: #fff;
+  padding: 0 0.25rem;
+  left: 0.875rem;
+}
+
+/* When floating AND focused — label stays pink */
+.floating-notch.is-floating.is-focused label {
+  color: #E91E8C;
+}
+
+/* ── ERROR state ─────────────────────────────────────────────── */
+.floating-notch.has-error .floating-input-outline {
+  border-color: #EF4444;
+}
+
+.floating-notch.has-error label {
+  color: #EF4444;
+}
+
+.floating-notch.has-error.is-focused .floating-input-outline {
+  box-shadow: 0 0 0 2.5px rgba(239, 68, 68, 0.12);
+}
+
+/* ── Dark mode ───────────────────────────────────────────────── */
 html[data-theme='dark'] .floating-input {
-  background: var(--bg-card, #1F2937);
-  border-color: var(--border-default, #374151);
-  color: var(--text-primary, #F9FAFB);
+  color: #F9FAFB;
+  background: transparent;
 }
 
-html[data-theme='dark'] .floating-input:focus {
-  border-color: var(--brand, #E91E8C) !important;
-  box-shadow: 0 0 0 3px rgba(233,30,140,0.18) !important;
+html[data-theme='dark'] .floating-input-container {
+  --fl-bg: #1F2937;
 }
 
-html[data-theme='dark'] .floating-input:focus ~ label,
-html[data-theme='dark'] .floating-input:not(:placeholder-shown) ~ label {
-  background-color: var(--bg-card, #1F2937);
-  color: var(--brand, #E91E8C);
+html[data-theme='dark'] .floating-notch .floating-input-outline {
+  border-color: #374151;
+}
+
+html[data-theme='dark'] .floating-notch.is-focused .floating-input-outline {
+  border-color: #E91E8C;
+  box-shadow: 0 0 0 2.5px rgba(233, 30, 140, 0.18);
+}
+
+html[data-theme='dark'] .floating-notch.is-floating label {
+  background: #1F2937;
 }
 
 html[data-theme='dark'] .floating-input:-webkit-autofill,
@@ -84,9 +183,4 @@ html[data-theme='dark'] .floating-input:-webkit-autofill:focus {
   -webkit-text-fill-color: #F9FAFB;
   -webkit-box-shadow: 0 0 0px 1000px #1F2937 inset;
   transition: background-color 5000s ease-in-out 0s;
-}
-
-html[data-theme='dark'] .floating-input:-webkit-autofill ~ label {
-  background-color: #1F2937 !important;
-  color: var(--brand, #E91E8C) !important;
 }

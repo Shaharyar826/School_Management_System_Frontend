@@ -3,17 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import { AuthLayout } from '../public/PublicLayout';
+import FormInput from '../common/FormInput';
+import FloatingPasswordInput from '../common/FloatingPasswordInput';
 
 /* ── All React logic / API calls UNCHANGED ── */
 
 const AuthLogin = () => {
-  const { login, googleSignIn, loading } = useContext(AuthContext);
+  const { login, googleSignIn, resendVerification, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: '', password: '', tenantIdentifier: '' });
   const [error, setError] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const isGoogleLoginEnabled = Boolean(
     googleClientId &&
@@ -28,9 +29,38 @@ const AuthLogin = () => {
     setLocalLoading(true);
     try {
       const result = await login(formData);
-      if (result?.success) navigate(result.redirectTo);
-      else setError(result?.message || 'Login failed. Please try again.');
-    } catch {
+
+      if (result?.success) {
+        navigate(result.redirectTo);
+        return;
+      }
+
+      // Handle EMAIL_NOT_VERIFIED specifically (must resend + redirect)
+      if (result?.code === 'EMAIL_NOT_VERIFIED') {
+        console.log('AuthLogin EMAIL_NOT_VERIFIED result:', result);
+        const email = result?.email || formData.email;
+        await resendVerification(email);
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
+
+      setError(result?.message || 'Login failed. Please try again.');
+    } catch (err) {
+      // If login throws instead of returning { code }, still handle EMAIL_NOT_VERIFIED when possible
+      console.log('AuthLogin login() threw:', {
+        err,
+        status: err?.response?.status,
+        errorData: err?.response?.data,
+        code: err?.response?.data?.code || err?.code,
+      });
+
+      const code = err?.response?.data?.code || err?.code;
+      if (code === 'EMAIL_NOT_VERIFIED') {
+        const email = formData.email;
+        await resendVerification(email);
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLocalLoading(false);
@@ -168,37 +198,23 @@ const AuthLogin = () => {
           {/* Form */}
           <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} onSubmit={onSubmit}>
 
-            <div className="field">
-              <label className="field-label">School Subdomain / Tenant ID</label>
-              <input type="text" name="tenantIdentifier" required className="field-input"
-                value={formData.tenantIdentifier} onChange={onChange} placeholder="e.g. myschool" />
-            </div>
+            <FormInput
+              id="tenantIdentifier" name="tenantIdentifier" type="text"
+              label="School Subdomain / Tenant ID" required
+              value={formData.tenantIdentifier} onChange={onChange}
+            />
 
-            <div className="field">
-              <label className="field-label">Email Address</label>
-              <input type="email" name="email" required className="field-input"
-                value={formData.email} onChange={onChange} placeholder="you@school.edu" />
-            </div>
+            <FormInput
+              id="email" name="email" type="email"
+              label="Email Address" required
+              value={formData.email} onChange={onChange}
+            />
 
-            <div className="field">
-              <label className="field-label">Password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password" required
-                  className="field-input"
-                  style={{ paddingRight: '2.75rem' }}
-                  value={formData.password} onChange={onChange} placeholder="••••••••"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  {showPassword
-                    ? <svg style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" /></svg>
-                    : <svg style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                  }
-                </button>
-              </div>
-            </div>
+            <FloatingPasswordInput
+              id="password" name="password" label="Password" required
+              value={formData.password} onChange={onChange}
+              autoComplete="current-password"
+            />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
               <button type="button" onClick={() => navigate('/signup')}

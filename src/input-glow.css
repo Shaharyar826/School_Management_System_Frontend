@@ -14,8 +14,10 @@ textarea,
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Focus state — brand pink ring to match the design system */
-input:not([type="checkbox"]):not([type="radio"]):focus,
+/* Focus state — brand pink ring to match the design system.
+   .floating-input is excluded: the notch fieldset handles its
+   own focus ring via .floating-notch.is-focused .floating-input-outline */
+input:not([type="checkbox"]):not([type="radio"]):not(.floating-input):focus,
 select:focus,
 textarea:focus,
 .custom-input:focus {
@@ -25,7 +27,7 @@ textarea:focus,
 }
 
 /* Focused label sibling — brand colour */
-input:not([type="checkbox"]):not([type="radio"]):focus ~ label,
+input:not([type="checkbox"]):not([type="radio"]):not(.floating-input):focus ~ label,
 select:focus ~ label,
 textarea:focus ~ label,
 .custom-input:focus ~ label {

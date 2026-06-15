@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useContext, lazy, Suspense, useState, useEffect } from 'react'
+
 import Layout from './components/layout/Layout'
 import AuthLogin from './components/auth/AuthLogin'
 import TenantLogin from './components/auth/TenantLogin'
@@ -25,6 +26,8 @@ import 'react-toastify/dist/ReactToastify.css'
 import PublicLayout from './components/public/PublicLayout'
 import TenantRegistration from './components/auth/TenantRegistration'
 import EmailVerification from './components/auth/EmailVerification'
+import ReactivatePage from './pages/ReactivatePage'
+import EmailVerifiedPage from './pages/auth/EmailVerifiedPage'
 
 // SaaS public pages
 import HomePage from './pages/public/HomePage'
@@ -35,6 +38,7 @@ import PrivacyPage from './pages/public/PrivacyPage'
 import TermsPage from './pages/public/TermsPage'
 import SchoolSetupDashboard from './components/onboarding/SchoolSetupDashboard'
 import TrialExpiredPage from './pages/auth/TrialExpiredPage'
+import SetupCheckoutPage from './pages/SetupCheckoutPage'
 import SuperAdminLogin from './components/super-admin/SuperAdminLogin'
 import SuperAdminDashboard from './components/super-admin/SuperAdminDashboard'
 import SuperAdminTenants from './components/super-admin/SuperAdminTenants'
@@ -136,7 +140,8 @@ const NotFoundPage = () => (
 )
 
 function App() {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const { loading } = useContext(AuthContext);
+
 
   const [initialLoad, setInitialLoad] = useState(true);
   
@@ -163,8 +168,10 @@ function App() {
               <StripeProvider>
               <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
+          <Route path="/email-verified" element={<EmailVerifiedPage />} />
             {/* Public Routes */}
           {/* Public website */}
+          <Route path="/reactivate" element={<ReactivatePage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="/pricing" element={<PublicPricingPage />} />
           <Route path="/about" element={<PublicAboutPage />} />
@@ -254,6 +261,17 @@ function App() {
             </PublicLayout>
           </PrivateRoute>
         } />
+
+        <Route path="/setup/checkout" element={
+          <PrivateRoute>
+            <PublicLayout>
+              <Suspense fallback={<LoadingSpinner />}>
+                <SetupCheckoutPage />
+              </Suspense>
+            </PublicLayout>
+          </PrivateRoute>
+        } />
+
 
         {/* Trial expired — only shown when trial is over and no payment method */}
         <Route path="/billing" element={

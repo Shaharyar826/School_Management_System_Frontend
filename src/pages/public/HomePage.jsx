@@ -306,7 +306,7 @@ const HeroSection = ({ navigate }) => (
             <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
             <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
             <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
-            <span style={{ marginLeft: '1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>app.eduflowpro.com/dashboard</span>
+            <span style={{ marginLeft: '1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>app.learnexespro.com/dashboard</span>
           </div>
 
           {/* Mock dashboard content */}

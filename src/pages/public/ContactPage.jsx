@@ -29,7 +29,7 @@ const FadeIn = ({ children, delay = 0, style = {}, className = '' }) => {
 const CONTACT_INFO = [
   {
     icon: ['M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],
-    label: 'Email', value: 'hello@eduflowpro.com', href: 'mailto:hello@eduflowpro.com',
+    label: 'Email', value: 'hello@learnexespro.com', href: 'mailto:hello@learnexespro.com',
     accent: '#E91E8C', bg: 'rgba(233,30,140,0.08)',
   },
   {
@@ -253,7 +253,7 @@ const ContactPage = () => {
                 {status === 'error' && (
                   <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 12, padding: '0.875rem 1rem', fontSize: '0.875rem', color: '#991B1B', display: 'flex', gap: 10, alignItems: 'center' }}>
                     <Icon d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" size={18} stroke="#DC2626" />
-                    Something went wrong. Please try again or email us at hello@eduflowpro.com
+                    Something went wrong. Please try again or email us at hello@learnexespro.com
                   </div>
                 )}
 

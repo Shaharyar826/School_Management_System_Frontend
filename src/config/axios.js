@@ -27,12 +27,16 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+  if (error.response?.status === 401) {
       const path = window.location.pathname;
       const isPublicPage = ['/', '/signup', '/login', '/about', '/contact', '/pricing', '/privacy', '/terms'].includes(path);
       const isAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/super-admin');
+
+      // Prevent onboarding/trial pages from being hard-redirected on a temporary 401 during setup.
+      const isOnboardingFlow = path.includes('/onboarding') || path.includes('/setup') || path.includes('/subscription');
+
       const protectedPrefixes = [
-        '/dashboard', '/setup', '/billing', '/teachers', '/students', '/attendance', '/student-attendance',
+        '/dashboard', '/billing', '/teachers', '/students', '/attendance', '/student-attendance',
         '/fees', '/student-fees', '/salaries', '/support-staff', '/admin-staff', '/events-notices', '/notices',
         '/notifications', '/contact-messages', '/meetings', '/history', '/subscription', '/school-settings',
         '/content-management', '/profile', '/user-profile', '/upload', '/results', '/my-results', '/parent',
@@ -42,7 +46,7 @@ axios.interceptors.response.use(
       ];
       const isProtectedPath = protectedPrefixes.some((prefix) => path.startsWith(prefix));
 
-      if (isProtectedPath && !isPublicPage && !isAuthPage) {
+      if (isProtectedPath && !isPublicPage && !isAuthPage && !isOnboardingFlow) {
         localStorage.removeItem('ba_token');
         localStorage.removeItem('tenant');
         delete axios.defaults.headers.common['Authorization'];

@@ -143,7 +143,7 @@ const EduFlowLanding = () => {
     try {
       const response = await axios.post('/api/onboarding/signup', { ...signupData, plan: selectedPlan });
       localStorage.setItem('token', response.data.token);
-      window.location.href = `https://${signupData.subdomain}.eduflowpro.com/dashboard`;
+      window.location.href = `https://${signupData.subdomain}.learnexespro.com/dashboard`;
     } catch (error) {
       alert(error.response?.data?.message || 'Signup failed');
     }
@@ -327,17 +327,26 @@ const EduFlowLanding = () => {
               </div>
 
               <div className="field">
-                <label className="field-label">Your Subdomain</label>
-                <div className="flex">
-                  <input type="text" placeholder="yourschool" value={signupData.subdomain}
-                    onChange={e => setSignupData({ ...signupData, subdomain: e.target.value })}
-                    className="field-input rounded-r-none flex-1" required />
-                  <span className="px-4 flex items-center text-sm font-medium rounded-r-xl"
-                    style={{ background: 'var(--bg-muted)', border: '1.5px solid var(--border-default)', borderLeft: 'none', color: 'var(--text-muted)' }}>
-                    .eduflowpro.com
+                <label className="field-label">School Subdomain</label>
+                <div className="flex" style={{ alignItems: 'stretch' }}>
+                  <input
+                    type="text"
+                    placeholder="yourschool"
+                    value={signupData.subdomain}
+                    onChange={(e) => setSignupData({ ...signupData, subdomain: e.target.value })}
+                    className="field-input rounded-r-none flex-1 subdomain-input"
+                    required
+                    autoComplete="off"
+                  />
+                  <span
+                    className="px-4 flex items-center text-sm font-medium rounded-r-xl"
+                    style={{ background: 'var(--bg-muted)', border: '1.5px solid var(--border-default)', borderLeft: 'none', color: 'var(--text-muted)' }}
+                  >
+                    .learnexes.qzz.io
                   </span>
                 </div>
               </div>
+
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="field">

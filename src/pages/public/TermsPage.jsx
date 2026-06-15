@@ -86,7 +86,7 @@ const SECTIONS = [
   {
     id: 'contact-legal',
     title: '13. Contact Information',
-    content: 'For questions about these Terms, contact us at: legal@eduflowpro.com or EduFlow Pro, 123 Education Lane, San Francisco, CA 94102, USA.',
+    content: 'For questions about these Terms, contact us at: legal@learnexespro.com or EduFlow Pro, 123 Education Lane, San Francisco, CA 94102, USA.',
   },
 ];
 

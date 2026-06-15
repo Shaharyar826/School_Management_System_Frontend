@@ -123,7 +123,8 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SuperAdminContext from '../../context/SuperAdminContext';
-import {AiOutlineEye, AiOutlineEyeInvisible} from 'react-icons/ai';
+import FormInput from '../common/FormInput';
+import FloatingPasswordInput from '../common/FloatingPasswordInput';
 
 const SuperAdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -189,45 +190,16 @@ const SuperAdminLogin = () => {
             </div>
           )}
           <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
+              <FormInput
+                id="email" name="email" type="email"
+                label="Email Address" required
+                value={formData.email} onChange={handleChange}
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative mt-1 flex">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-l-lg focus:outline-none sm:text-sm"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="px-3 py-2 border border-l-0 border-gray-300 bg-white rounded-r-lg hover:bg-gray-50 focus:outline-none flex items-center"
-                  >
-                    {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
-                  </button>
-              </div>
-            </div>
+              <FloatingPasswordInput
+                id="password" name="password" label="Password" required
+                value={formData.password} onChange={handleChange}
+                autoComplete="current-password"
+              />
           </div>
 
           <div>

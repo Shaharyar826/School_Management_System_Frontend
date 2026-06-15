@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    EDUFLOW PRO — SaaS Design System v3
    Dark hero landing + pink-orange headline gradient
    App UI: pink-to-purple (#E91E8C → #9333EA)
@@ -573,13 +573,11 @@ h1,h2,h3,h4,h5,h6 {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--bg-card) !important;
+  background: rgba(255,255,255,0.92) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border-bottom: 1px solid var(--ds-border) !important;
   box-shadow: var(--ds-shadow-nav);
-  pointer-events: auto;
-  isolation: isolate;
 }
 
 .school-navbar-brand {

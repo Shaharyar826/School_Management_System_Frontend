@@ -121,7 +121,7 @@ const SuperAdminDashboard = () => {
                 <div key={t.id} style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F9FAFB' }}>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 500, color: '#111827', margin: 0 }}>{t.schoolName || t.name}</p>
-                    <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>{t.slug}.eduflow.com</p>
+                    <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>{t.slug}.learnexes.com</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span className={statusBadge(t.status)}>{t.status}</span>

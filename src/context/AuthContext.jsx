@@ -208,7 +208,16 @@ export const AuthProvider = ({ children }) => {
 
       return { success: false, message: 'Login failed' };
     } catch (err) {
+      const status = err?.response?.status;
       const errorData = err.response?.data;
+
+      // Debug: confirm what Better Auth returns for "email not verified"
+      console.log('AuthContext login error:', {
+        status,
+        errorData,
+        hasCode: Boolean(errorData?.code),
+        code: errorData?.code,
+      });
 
       if (errorData?.requiresVerification) {
         setEmailVerificationRequired(true);
@@ -216,6 +225,17 @@ export const AuthProvider = ({ children }) => {
           success: false,
           message: errorData.message || 'Email verification required',
           requiresVerification: true,
+          email: errorData.email,
+        };
+      }
+
+      if (errorData?.code === 'EMAIL_NOT_VERIFIED') {
+        return {
+          success: false,
+          message: errorData.message || 'Email verification required',
+          code: errorData.code,
+          requiresVerification: true,
+          // pass through so AuthLogin can resend using the same email the user typed
           email: errorData.email,
         };
       }

@@ -136,7 +136,7 @@ const SuperAdminTenants = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{tenant.schoolName}</div>
-                        <div className="text-sm text-gray-500">{tenant.subdomain}.eduflow.com</div>
+                        <div className="text-sm text-gray-500">{tenant.subdomain}.learnexes.com</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

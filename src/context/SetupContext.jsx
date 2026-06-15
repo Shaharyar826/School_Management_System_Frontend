@@ -103,14 +103,14 @@ export const SetupProvider = ({ children }) => {
         setHasActiveSubscription(false);
       }
     } finally {
-      if (!cachedSetup) setLoading(false);
+      setLoading(false);
     }
-  }, [cachedSetup, isAuthenticated, tenantIdentifier, user]);
+  }, [cachedSetup, isAuthenticated, tenantIdentifier, user?.id]);
 
   useEffect(() => {
     if (authLoading) return;
     fetchStatus();
-  }, [authLoading, fetchStatus]);
+  }, [authLoading, isAuthenticated, user?.id]);
 
   const value = {
     setupComplete,

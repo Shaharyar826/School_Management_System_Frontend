@@ -243,7 +243,7 @@ const SuperAdminPortal = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Support Email</label>
                 <input
                   type="email"
-                  value={settings.supportEmail || 'support@eduflowpro.com'}
+                  value={settings.supportEmail || 'support@learnexespro.com'}
                   onChange={(e) => setSettings({...settings, supportEmail: e.target.value})}
                   className="w-full p-3 border rounded-lg"
                 />

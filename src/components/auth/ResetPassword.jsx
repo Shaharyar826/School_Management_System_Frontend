@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from '../../config/axios';
 import { AuthLayout } from '../public/PublicLayout';
+import FloatingPasswordInput from '../common/FloatingPasswordInput';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -88,17 +89,17 @@ const ResetPassword = () => {
                 </div>
               </div>
             ) : token && (
-              <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} onSubmit={handleSubmit}>
-                <div className="field">
-                  <label className="field-label">New Password</label>
-                  <input type="password" required className="field-input" value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 characters" minLength={8} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Confirm New Password</label>
-                  <input type="password" required className="field-input" value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your password" minLength={8} />
-                </div>
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} onSubmit={handleSubmit}>
+                <FloatingPasswordInput
+                  id="newPassword" name="newPassword" label="New Password" required
+                  value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <FloatingPasswordInput
+                  id="confirmPassword" name="confirmPassword" label="Confirm New Password" required
+                  value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
                 <button type="submit" disabled={loading || !newPassword || !confirmPassword}
                   style={{ width: '100%', padding: '0.875rem', background: (loading || !newPassword || !confirmPassword) ? '#D1D5DB' : 'linear-gradient(135deg, #E91E8C, #FF6B35)', color: '#fff', border: 'none', borderRadius: 9999, fontWeight: 700, fontSize: '1.0625rem', cursor: (loading || !newPassword || !confirmPassword) ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: (loading || !newPassword || !confirmPassword) ? 'none' : '0 4px 20px rgba(233,30,140,0.35)', marginTop: '0.5rem' }}>
                   {loading ? 'Resetting...' : 'Reset Password →'}

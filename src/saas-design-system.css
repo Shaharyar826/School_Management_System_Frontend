@@ -187,42 +187,95 @@
 .stat-icon-blue    { background: #EFF6FF;           color: #3B82F6; }
 .stat-icon-red     { background: #FEF2F2;           color: #EF4444; }
 
-/* ── Form Inputs ──────────────────────────────────────────── */
+/* ── Form Inputs — Floating Label (notch pattern) ─────────── */
+
+/*
+  Every .field wraps an input and a label.
+  Label floats to the border-top on focus or when the input has a value.
+  Uses the fieldset/legend notch technique to cut the border behind the label.
+*/
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0;
+  position: relative;
+  margin-bottom: 0.25rem;
 }
 
+/* The visible label — sits inside the field at rest */
 .field-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--text-muted, #9CA3AF);
+  background: transparent;
+  padding: 0 0.25rem;
+  pointer-events: none;
+  transition: top 0.18s ease, font-size 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+  z-index: 2;
+  line-height: 1;
+  white-space: nowrap;
 }
 
+/* Floated state — triggered by CSS when input is focused or filled */
+.field-input:focus ~ .field-label,
+.field-input:not(:placeholder-shown) ~ .field-label {
+  top: 0;
+  font-size: 0.8rem;
+  color: var(--brand, #E91E8C);
+  background-color: var(--bg-card, #fff);
+  padding: 0 0.35rem;
+}
+
+/* Also handle autofill */
+.field-input:-webkit-autofill ~ .field-label {
+  top: 0;
+  font-size: 0.8rem;
+  color: var(--brand, #E91E8C);
+  background-color: var(--bg-card, #fff);
+  padding: 0 0.35rem;
+}
+
+/* Hide the top border segment behind the floating label */
+.field-input:focus,
+.field-input:not(:placeholder-shown) {
+  border-top-color: transparent;
+}
+
+.field-input:-webkit-autofill {
+  border-top-color: transparent;
+}
+
+/* The input itself */
 .field-input {
   width: 100%;
   padding: 0.75rem 1rem;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.9375rem;
   color: var(--text-primary);
-  background: var(--bg-card);
-  border: 1.5px solid var(--border-default);
-  border-radius: var(--radius-md);
+  background: var(--bg-card, #fff);
+  border: 1.5px solid var(--border-default, #E5E7EB);
+  border-radius: var(--radius-md, 0.5rem);
   outline: none;
-  transition: var(--transition);
+  transition: border-color 0.18s, box-shadow 0.18s;
   box-shadow: var(--shadow-input);
+  position: relative;
+  z-index: 1;
+  /* Required so :not(:placeholder-shown) fires correctly */
 }
 
 .field-input::placeholder {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  /* Keep placeholder invisible — label replaces it */
+  color: transparent;
 }
 
 .field-input:focus {
-  border-color: var(--brand);
-  box-shadow: var(--shadow-input-focus);
+  border-color: var(--brand, #E91E8C);
+  box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.15);
 }
 
 .field-input:hover:not(:focus) {
@@ -230,21 +283,67 @@
 }
 
 .field-input-error {
-  border-color: #EF4444;
+  border-color: #EF4444 !important;
 }
 
 .field-input-error:focus {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+.field-input-error ~ .field-label {
+  color: #EF4444;
 }
 
 .field-error {
   font-size: 0.8125rem;
   color: #EF4444;
+  margin-top: 0.25rem;
 }
 
 .field-hint {
   font-size: 0.8125rem;
   color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Also support label-before-input via :has() for browsers that support it */
+.field:has(.field-input:focus) .field-label,
+.field:has(.field-input:not(:placeholder-shown)) .field-label {
+  top: 0;
+  font-size: 0.8rem;
+  color: var(--brand, #E91E8C);
+  background-color: var(--bg-card, #fff);
+  padding: 0 0.35rem;
+}
+
+.field:has(.field-input:focus) .field-input,
+.field:has(.field-input:not(:placeholder-shown)) .field-input {
+  border-top-color: transparent;
+}
+
+html[data-theme='dark'] .field:has(.field-input:focus) .field-label,
+html[data-theme='dark'] .field:has(.field-input:not(:placeholder-shown)) .field-label {
+  background-color: var(--bg-card, #1F2937);
+}
+
+html[data-theme='dark'] .field-input {
+  background: var(--bg-card, #1F2937);
+  border-color: var(--border-default, #374151);
+  color: var(--text-primary, #F9FAFB);
+}
+
+html[data-theme='dark'] .field-input:focus ~ .field-label,
+html[data-theme='dark'] .field-input:not(:placeholder-shown) ~ .field-label {
+  background-color: var(--bg-card, #1F2937);
+}
+
+html[data-theme='dark'] .field-input:-webkit-autofill {
+  -webkit-text-fill-color: #F9FAFB;
+  -webkit-box-shadow: 0 0 0px 1000px #1F2937 inset;
+}
+
+html[data-theme='dark'] .field-input:-webkit-autofill ~ .field-label {
+  background-color: var(--bg-card, #1F2937);
 }
 
 /* ── Badges ───────────────────────────────────────────────── */

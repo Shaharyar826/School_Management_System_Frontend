@@ -124,7 +124,7 @@ const SuperAdminUsers = () => {
                       </td>
                       <td style={{ padding: '12px 20px' }}>
                         <p style={{ fontSize: 13, color: '#374151', margin: 0 }}>{u.tenant?.schoolName || '—'}</p>
-                        {u.tenant?.subdomain && <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>{u.tenant.subdomain}.eduflow.com</p>}
+                        {u.tenant?.subdomain && <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>{u.tenant.subdomain}.learnexes.com</p>}
                       </td>
                       <td style={{ padding: '12px 20px' }}>
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 9999, ...roleStyle(u.role) }}>{u.role}</span>

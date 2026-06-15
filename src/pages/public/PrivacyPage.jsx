@@ -98,7 +98,7 @@ const SECTIONS = [
     content: [
       {
         subtitle: '6.1 Data Access & Portability',
-        text: 'You have the right to access all data we hold about your institution and to export it in a machine-readable format at any time. Use the export feature in your dashboard or contact us at privacy@eduflowpro.com.',
+        text: 'You have the right to access all data we hold about your institution and to export it in a machine-readable format at any time. Use the export feature in your dashboard or contact us at privacy@learnexespro.com.',
       },
       {
         subtitle: '6.2 Data Deletion',
@@ -130,7 +130,7 @@ const SECTIONS = [
     content: [
       {
         subtitle: 'Privacy Inquiries',
-        text: 'For any privacy-related questions or to exercise your rights, contact our Data Protection Officer at: privacy@eduflowpro.com or write to us at EduFlow Pro, 123 Education Lane, San Francisco, CA 94102.',
+        text: 'For any privacy-related questions or to exercise your rights, contact our Data Protection Officer at: privacy@learnexespro.com or write to us at EduFlow Pro, 123 Education Lane, San Francisco, CA 94102.',
       },
     ],
   },

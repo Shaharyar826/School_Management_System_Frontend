@@ -1,4 +1,5 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSetup } from '../../context/SetupContext';
@@ -179,53 +180,48 @@ const SchoolSetupDashboard = () => {
   // Called before Stripe checkout — marks the tenant as setup_complete
   // so features are immediately unlocked once the user returns.
   const markSetupComplete = async (planId, count) => {
-    try {
-      const tenant = getTenantHeader();
-      await axios.post('/api/onboarding/complete-setup', {
-        plan: planId,
-        studentCount: count,
-      }, {
-        headers: { 'X-Tenant': tenant },
-      });
-      // Refresh SetupContext so route guards immediately allow dashboard access
-      await refreshSetup();
-    } catch (e) {
-      console.error('complete-setup call failed (non-blocking):', e);
-      // Non-blocking — Stripe checkout can still proceed
-    }
+    const tenant = getTenantHeader();
+    await axios.post('/api/onboarding/complete-setup', {
+      plan: planId,
+      studentCount: count,
+    }, {
+      headers: { 'X-Tenant': tenant },
+    });
+    // Refresh SetupContext so route guards immediately allow dashboard access
+    await refreshSetup();
   };
 
   const handleSubscribe = async (planId) => {
     if (!validateStudentCount(studentCount, planId)) return;
     setLoading(true);
     setSetupError('');
+
     try {
       const count = parseInt(studentCount);
 
-      // 1. Mark setup complete in DB first (trial starts)
+      // 1) Mark setup complete in DB first (trial starts)
       await markSetupComplete(planId, count);
 
-      // 2. Create Stripe checkout session
-      const res = await axios.post('/api/stripe/create-checkout-session', {
-        plan: planId,
-        studentCount: count,
-        currency: 'pkr',
-        customFeatures: planId === 'custom' ? customFeatures : undefined,
-        successUrl: `${window.location.origin}/dashboard?setup=success`,
-        cancelUrl:  `${window.location.origin}/setup`,
-      }, {
-        headers: { 'X-Tenant': getTenantHeader() },
-      });
+      // 2) Redirect to dedicated checkout page (message-only UI)
+      navigate(
+        `/setup/checkout?plan=${encodeURIComponent(planId)}&studentCount=${encodeURIComponent(count)}&currency=pkr`
+      );
 
-      if (res.data.url) {
-        window.location.href = res.data.url;
-      } else {
-        // No Stripe URL (demo / dev mode) → go directly to dashboard
-        navigate('/dashboard', { replace: true });
-      }
     } catch (e) {
       console.error('Checkout failed:', e);
-      setSetupError('Something went wrong. Please try again.');
+
+      const backend = e?.response?.data;
+      const code = backend?.code;
+      const message = backend?.message;
+      const details = backend?.details;
+
+      const detailsText = details
+        ? (typeof details === 'string' ? details : JSON.stringify(details, null, 2))
+        : '';
+
+      setSetupError(
+        `WHAT WENT WRONG?\n${code ? `Code: ${code}\n` : ''}${message || 'Unknown error'}${detailsText ? `\n\nDetails:\n${detailsText}` : ''}`
+      );
     } finally {
       setLoading(false);
     }

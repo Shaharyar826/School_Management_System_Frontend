@@ -119,7 +119,7 @@ const TenantRegistration = () => {
                 <p className="text-xs text-red-500 mt-1">{fieldErrors.subdomain}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Your portal will be: {formData.subdomain}.eduflow.com
+                Your portal will be: {formData.subdomain}.learnexes.qzz.io
               </p>
               {subdomainAvailable === false && (
                 <p className="text-xs text-red-500 mt-1">Subdomain not available</p>

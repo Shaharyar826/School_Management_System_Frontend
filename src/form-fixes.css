@@ -1,5 +1,5 @@
 /* Form fixes to ensure inputs are clickable */
-input, select, textarea, button {
+input:not(.floating-input), select:not(.floating-input), textarea, button {
   position: relative;
   z-index: 30 !important;
 }

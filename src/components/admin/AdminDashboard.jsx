@@ -9,6 +9,7 @@ import NoticeList from '../notices/NoticeList';
 import { useDashboardStats } from '../../hooks/useDashboard';
 import ComplaintModal from '../common/ComplaintModal';
 import DashboardSkeleton from '../common/DashboardSkeleton';
+import BillingStatusBanner from '../billing/BillingStatusBanner';
 
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -106,6 +107,9 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Billing status banner */}
+        <BillingStatusBanner />
 
         {/* Reset status message */}
         {resetStatus.message && (

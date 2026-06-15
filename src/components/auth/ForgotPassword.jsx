@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from '../../config/axios';
 import { AuthLayout } from '../public/PublicLayout';
+import FormInput from '../common/FormInput';
 
 const ForgotPassword = () => {
   const [email, setEmail]     = useState('');
@@ -76,12 +77,11 @@ const ForgotPassword = () => {
                 <p style={{ fontSize: '0.875rem' }}>{success}</p>
               </div>
             ) : (
-              <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} onSubmit={onSubmit}>
-                <div className="field">
-                  <label className="field-label">Email Address</label>
-                  <input type="email" required className="field-input" value={email}
-                    onChange={e => setEmail(e.target.value)} placeholder="you@school.edu" />
-                </div>
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} onSubmit={onSubmit}>
+                <FormInput
+                  id="email" name="email" type="email" label="Email Address" required
+                  value={email} onChange={e => setEmail(e.target.value)}
+                />
                 <button type="submit" disabled={loading || !email}
                   style={{ width: '100%', padding: '0.875rem', background: (loading || !email) ? '#D1D5DB' : 'linear-gradient(135deg, #E91E8C, #FF6B35)', color: '#fff', border: 'none', borderRadius: 9999, fontWeight: 700, fontSize: '1.0625rem', cursor: (loading || !email) ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: (loading || !email) ? 'none' : '0 4px 20px rgba(233,30,140,0.35)', marginTop: '0.5rem' }}>
                   {loading ? 'Sending...' : 'Send Reset Link →'}
