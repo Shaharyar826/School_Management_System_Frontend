@@ -33,6 +33,8 @@ const AuthenticatedRoute = memo(({ children }) => {
   const {
     setupComplete,
     trialActive,
+    trialDaysLeft,
+    subscriptionPlan,
     hasActiveSubscription,
     loading: setupLoading,
   } = useSetup();
@@ -49,12 +51,31 @@ const AuthenticatedRoute = memo(({ children }) => {
   }
 
   // 2. Setup is required only for tenant admins/principals
+  // Exception: allow the billing trial / checkout flow to continue to /dashboard
+  // even if onboarding setupComplete hasn't flipped yet (webhook/status update lag).
+  const isTrialStarted =
+    Boolean(trialActive) ||
+    (typeof trialDaysLeft === 'number' && trialDaysLeft > 0) ||
+    subscriptionPlan === 'trial';
+
   if (requiresSetup && !location.pathname.startsWith('/setup')) {
+    const isGoingToDashboard = location.pathname.startsWith('/dashboard');
+    if (isGoingToDashboard && isTrialStarted) {
+      return children;
+    }
     return <Navigate to="/setup" replace />;
   }
 
   // 3. Non-admin users should not remain on /setup when the tenant is still pending
-  if (location.pathname.startsWith('/setup') && setupComplete === false && !isAdminRole) {
+  // if (location.pathname.startsWith('/setup') && setupComplete === false && !isAdminRole) {
+  //   return <Navigate to="/dashboard" replace />;
+  // }
+
+  if (
+    location.pathname.startsWith('/setup')  && 
+    !location.pathname.startsWith('/setup/checkout') &&
+    setupComplete
+  ) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -71,9 +92,9 @@ const AuthenticatedRoute = memo(({ children }) => {
   }
 
   // 4. User is already on /setup but setup is complete → bounce to dashboard
-  if (location.pathname.startsWith('/setup') && setupComplete) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // if (location.pathname.startsWith('/setup') && setupComplete) {
+  //   return <Navigate to="/dashboard" replace />;
+  // }
 
   return children;
 });

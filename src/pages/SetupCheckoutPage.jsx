@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSetup } from "../context/SetupContext";
 
 import axios from "../config/axios";
 import { toast } from "react-toastify";
@@ -146,10 +147,19 @@ const SetupCheckoutPage = () => {
   //   }
   // };
 
-  const onProceed = async () => {
-    navigate('/dashboard');
-  };
+  const { refresh: refreshSetup } = useSetup();
 
+  const onProceed = async () => {
+    setLoading(true);
+    try {
+      await refreshSetup();
+      navigate("/dashboard");
+    } catch {
+      setErrorMsg("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div
       style={{
@@ -386,8 +396,6 @@ const SetupCheckoutPage = () => {
               </div>
             )}
 
-
-
             <div style={{ marginTop: 12, color: MID, fontSize: 13 }}>
               No payment is taken during the 14-day trial. You can pay after the
               trial ends.
@@ -409,24 +417,23 @@ const SetupCheckoutPage = () => {
               </div>
             ) : null}
 
-
-
             <button
               onClick={onProceed}
+              disabled={loading}
               style={{
                 width: "100%",
                 marginTop: 10,
                 padding: "0.9rem",
                 borderRadius: 9999,
                 border: "none",
-                background: GRAD,
+                background: loading ? "#D1D5DB" : GRAD,
                 color: "#fff",
                 fontWeight: 900,
-                cursor: "pointer",
-                boxShadow: "0 10px 28px rgba(233,30,140,0.28)",
+                cursor: loading ? "not-allowed" : "pointer",
+                boxShadow: loading ? "none" : "0 10px 28px rgba(233,30,140,0.28)",
               }}
             >
-              Start 14-Days Trial
+              { loading ? "Starting 14-Days Trial" : "Start 14-Days Trial"}
             </button>
 
             <div style={{ marginTop: 12, color: MID, fontSize: 13 }}>
