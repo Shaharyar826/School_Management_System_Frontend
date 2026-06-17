@@ -1,22 +1,27 @@
 import { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
-import { useNavigation } from '../../context/NavigationContext';
 import BackButton from '../common/BackButton';
 import { formatDateForDisplay } from '../../utils/dateUtils';
 
 const ViewStudent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useContext(AuthContext);
-  const { goBack } = useNavigation();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!id) {
+      // Prevent calls like /api/students/undefined
+      setError('Invalid student id');
+      setLoading(false);
+      navigate('/students', { replace: true });
+      return;
+    }
+
     const fetchStudent = async () => {
       try {
         setLoading(true);
@@ -34,7 +39,7 @@ const ViewStudent = () => {
     };
 
     fetchStudent();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {

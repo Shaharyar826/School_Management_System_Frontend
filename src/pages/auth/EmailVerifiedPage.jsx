@@ -90,6 +90,19 @@ const ErrorIcon = () => (
   </div>
 )
 
+function inferTenantFromHostname(hostname) {
+  const h = String(hostname || '').toLowerCase().trim()
+
+  // learnexes.qzz.io => no tenant prefix
+  // <tenant>.learnexes.qzz.io => tenant prefix
+  const marker = '.learnexes.qzz.io'
+  if (h.endsWith(marker)) return h.slice(0, -marker.length) || null
+
+  // If running on custom base like: <tenant>.example.com (not the case now),
+  // you can extend this later.
+  return null
+}
+
 export default function EmailVerifiedPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -108,7 +121,28 @@ export default function EmailVerifiedPage() {
 
   useEffect(() => {
     if (secondsLeft <= 0) {
-      navigate(isError ? '/login?verification=failed' : '/login', { replace: true })
+      if (isError) {
+        navigate('/login?verification=failed', { replace: true })
+        return
+      }
+
+      // After email verification, force tenant context so user lands on
+      // <schoolName>.learnexes.qzz.io/dashboard (production-safe).
+      const hostnameTenant = inferTenantFromHostname(window.location.hostname)
+      const storedTenant = localStorage.getItem('tenant') || ''
+      const tenant = hostnameTenant || storedTenant || ''
+
+      if (tenant) localStorage.setItem('tenant', tenant)
+
+      // Prefer tenant subdomain if we can infer it; otherwise fall back to login.
+      if (tenant && tenant !== 'learnexes') {
+        // Go to tenant dashboard on the correct subdomain
+        const url = `https://${tenant}.learnexes.qzz.io/dashboard`
+        window.location.href = url
+        return
+      }
+
+      navigate('/login', { replace: true })
     }
   }, [secondsLeft, navigate, isError])
 

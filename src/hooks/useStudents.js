@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentsApi } from '../services/api';
 import { queryKeys, invalidateQueries } from '../config/queryClient';
 import { toast } from 'react-toastify';
-import { useDebounce } from './useDebounce';
 
 // Get all students with client-side filtering for better caching
 export const useStudents = (filters = {}) => {
@@ -14,32 +13,40 @@ export const useStudents = (filters = {}) => {
     queryFn: () => studentsApi.getAll({ viewAll: true, limit: 1000 }), // Fetch all students
     staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for better performance
     select: (data) => {
-      let students = data?.data || [];
-      
+      const raw = data?.data || [];
+
+      // Normalize identifier to prevent accidental undefined routes.
+      // Some APIs may return `id` instead of `_id`.
+      let students = raw.map((s) => {
+        const normalizedId = s?._id ?? s?.id ?? s?.student?._id ?? s?.student?.id;
+        return normalizedId ? { ...s, _id: normalizedId } : s;
+      });
+
       // Apply client-side filters
       if (filters.class && filters.class !== 'all') {
-        students = students.filter(student => student.class === filters.class);
+        students = students.filter((student) => student.class === filters.class);
       }
       if (filters.section && filters.section !== 'all') {
-        students = students.filter(student => student.section === filters.section);
+        students = students.filter((student) => student.section === filters.section);
       }
       if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.toLowerCase().trim();
-        students = students.filter(student => 
-          student.user?.name?.toLowerCase().includes(searchTerm) ||
-          student.rollNumber?.toLowerCase().includes(searchTerm) ||
-          student.class?.toLowerCase().includes(searchTerm) ||
-          student.section?.toLowerCase().includes(searchTerm)
+        students = students.filter(
+          (student) =>
+            student.user?.name?.toLowerCase().includes(searchTerm) ||
+            student.rollNumber?.toLowerCase().includes(searchTerm) ||
+            student.class?.toLowerCase().includes(searchTerm) ||
+            student.section?.toLowerCase().includes(searchTerm),
         );
       }
-      
+
       // Apply pagination client-side
       const page = filters.page || 1;
       const limit = filters.limit || 25;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedStudents = students.slice(startIndex, endIndex);
-      
+
       return {
         students: paginatedStudents,
         totalCount: students.length,
@@ -47,8 +54,8 @@ export const useStudents = (filters = {}) => {
         pagination: {
           page,
           limit,
-          totalPages: Math.ceil(students.length / limit)
-        }
+          totalPages: Math.ceil(students.length / limit),
+        },
       };
     },
   });
@@ -102,16 +109,15 @@ export const useCreateStudent = () => {
 
 // Update student mutation
 export const useUpdateStudent = () => {
-  const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: ({ id, data }) => studentsApi.update(id, data),
     onSuccess: (data, variables) => {
       // Invalidate students list and specific student detail
       invalidateQueries.students();
-      queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(variables.id) });
+      // invalidate specific student detail cache
+      invalidateQueries.studentDetail?.(variables.id);
       invalidateQueries.dashboard();
-      
+
       toast.success(data?.message || 'Student updated successfully');
     },
     onError: (error) => {
