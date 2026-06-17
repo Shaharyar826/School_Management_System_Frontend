@@ -23,6 +23,29 @@ const AuthLogin = () => {
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const getTenantFromHostname = () => {
+    const hostname = window.location.hostname.toLowerCase();
+    const marker = '.learnexes.qzz.io';
+    if (hostname.endsWith(marker)) {
+      const tenant = hostname.slice(0, -marker.length);
+      return tenant || '';
+    }
+    return '';
+  };
+
+  const getTenantIdentifier = () => {
+    const tenantFromInput = (formData.tenantIdentifier || '').trim();
+    const tenantFromStorage = (localStorage.getItem('tenant') || '').trim();
+    const tenantFromHostname = getTenantFromHostname();
+    return tenantFromInput || tenantFromStorage || tenantFromHostname || '';
+  };
+
+  const redirectToTenantDashboard = (tenant) => {
+    const clean = String(tenant || '').trim();
+    if (!clean) return navigate('/dashboard');
+    window.location.href = `https://${clean}.learnexes.qzz.io/dashboard`;
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -31,6 +54,13 @@ const AuthLogin = () => {
       const result = await login(formData);
 
       if (result?.success) {
+        const tenant = getTenantIdentifier();
+        // Backend redirectTo may be tenant-agnostic (e.g. "/dashboard").
+        // Ensure we always land on the correct tenant subdomain.
+        if (tenant) {
+          redirectToTenantDashboard(tenant);
+          return;
+        }
         navigate(result.redirectTo);
         return;
       }
