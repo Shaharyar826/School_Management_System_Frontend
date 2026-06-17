@@ -18,7 +18,7 @@ const AuthContext = createContext();
 
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 const ACTIVITY_KEY = "ba_last_activity";
-
+console.log('[Auth] loadUser start, authLoading will resolve');
 const getCachedAuthSession = () => {
   const tenant = resolveTenantIdentifier();
   if (!tenant) return null;
@@ -327,6 +327,7 @@ export const AuthProvider = ({ children }) => {
         };
       } finally {
         setLoading(false);
+        console.log('[Auth] loadUser finished, authLoading=false');
       }
     },
     [persistAuthSession, setStoredActivity],

@@ -52,7 +52,7 @@ const AcademicsContentForm = () => {
       }
     };
     fetchContent();
-    // eslint-disable-next-line
+     
   }, []);
 
   const handleContentChange = (field, value) => {

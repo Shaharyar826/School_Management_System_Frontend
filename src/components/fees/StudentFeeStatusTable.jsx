@@ -54,8 +54,8 @@ const StudentFeeStatusTable = ({
   // Combined loading and error states
   const loading = studentsLoading || feesLoading;
   const error = studentsError?.response?.data?.message || feesError?.response?.data?.message || 
-                (studentsError ? 'Failed to load students' : '') || 
-                (feesError ? 'Failed to load fees' : '');
+                (studentsError ? 'Failed to load students, Kindly check your internet connection' : '') || 
+                (feesError ? 'Failed to load fees, kindly check your internet connection' : '');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

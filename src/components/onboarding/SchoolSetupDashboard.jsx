@@ -212,16 +212,17 @@ const SchoolSetupDashboard = () => {
       console.error('Checkout failed:', e);
 
       const backend = e?.response?.data;
-      const code = backend?.code;
+      // const code = backend?.code;
       const message = backend?.message;
-      const details = backend?.details;
+      // const details = backend?.details;
 
-      const detailsText = details
-        ? (typeof details === 'string' ? details : JSON.stringify(details, null, 2))
-        : '';
+      // const detailsText = details
+      //   ? (typeof details === 'string' ? details : JSON.stringify(details, null, 2))
+      //   : '';
 
       setSetupError(
-        `WHAT WENT WRONG?\n${code ? `Code: ${code}\n` : ''}${message || 'Unknown error'}${detailsText ? `\n\nDetails:\n${detailsText}` : ''}`
+        // `${code ? `Code: ${code}\n` : ''}${message || 'Unknown error'}${detailsText ? `\n\nDetails:\n${detailsText}` : ''}`
+        `${message}`
       );
     } finally {
       setLoading(false);

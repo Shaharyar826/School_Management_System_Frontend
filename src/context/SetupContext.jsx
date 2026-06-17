@@ -38,6 +38,7 @@ export const SetupProvider = ({ children }) => {
   };
 
   const fetchStatus = useCallback(async () => {
+    console.log('[Setup] fetchStatus called', { authLoading, isAuthenticated, userId: user?.id });
     if (authLoading) {
       return;
     }
@@ -104,6 +105,7 @@ export const SetupProvider = ({ children }) => {
       }
     } finally {
       setLoading(false);
+      console.log('[Setup] fetchStatus finished, loading=false');
     }
   }, [cachedSetup, isAuthenticated, tenantIdentifier, user?.id]);
 
