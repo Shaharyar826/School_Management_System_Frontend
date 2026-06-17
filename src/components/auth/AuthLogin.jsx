@@ -82,15 +82,23 @@ const AuthLogin = () => {
 
       if (result?.success) {
         // Prefer tenant from (1) input/localStorage/hostname, (2) user.tenant returned by backend
-        const tenantFromResult = result?.user?.tenant?.subdomain || result?.user?.tenant?.slug || '';
-        const tenant = getTenantIdentifier() || (tenantFromResult || '').trim();
+        const tenantFromResult =
+          result?.user?.tenant?.subdomain || result?.user?.tenant?.slug || '';
 
-        if (tenant) {
-          redirectToTenantDashboard(tenant);
+        const tenant =
+          (getTenantIdentifier() || '').trim() ||
+          (tenantFromResult || '').trim() ||
+          getTenantFromHostname().trim();
+
+        // If we still can't determine tenant, do NOT fall back to base dashboard.
+        // Instead, force the user to enter tenantIdentifier to prevent landing on learnexes.qzz.io.
+        if (!tenant) {
+          setError('Please enter your school subdomain (tenant) to continue.');
+          setLocalLoading(false);
           return;
         }
 
-        navigate(result.redirectTo);
+        redirectToTenantDashboard(tenant);
         return;
       }
 
