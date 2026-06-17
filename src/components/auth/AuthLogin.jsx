@@ -43,7 +43,16 @@ const AuthLogin = () => {
   const redirectToTenantDashboard = (tenant) => {
     const clean = String(tenant || '').trim();
     if (!clean) return navigate('/dashboard');
-    window.location.href = `https://${clean}.learnexes.qzz.io/dashboard`;
+
+    // Keep SPA origin to avoid hard subdomain routing/hosting failures (Cloudflare 522).
+    // Tenant isolation is handled by backend via hostname inference + X-Tenant header usage.
+    try {
+      localStorage.setItem('tenant', clean);
+    } catch {
+      // ignore storage failures
+    }
+
+    return navigate('/dashboard');
   };
 
   const onSubmit = async (e) => {
