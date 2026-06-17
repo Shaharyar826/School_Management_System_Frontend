@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
@@ -44,16 +44,34 @@ const AuthLogin = () => {
     const clean = String(tenant || '').trim();
     if (!clean) return navigate('/dashboard');
 
-    // Keep SPA origin to avoid hard subdomain routing/hosting failures (Cloudflare 522).
-    // Tenant isolation is handled by backend via hostname inference + X-Tenant header usage.
+    // Persist tenant for both UI and subsequent API calls.
     try {
       localStorage.setItem('tenant', clean);
     } catch {
       // ignore storage failures
     }
 
+    // Important: keep SPA navigation (no hard subdomain navigation to avoid 522).
+    // Backend tenant scoping is handled by requireOrg hostname inference and X-Tenant header.
     return navigate('/dashboard');
   };
+
+  // Pre-fill tenantIdentifier when user visits tenant subdomain, or when we already have it in localStorage.
+  useEffect(() => {
+    const hostTenant = getTenantFromHostname();
+    if (hostTenant && !formData.tenantIdentifier) {
+      setFormData((prev) => ({ ...prev, tenantIdentifier: hostTenant }));
+      try {
+        localStorage.setItem('tenant', hostTenant);
+      } catch {
+        // ignore
+      }
+    } else if (!formData.tenantIdentifier) {
+      const stored = (localStorage.getItem('tenant') || '').trim();
+      if (stored) setFormData((prev) => ({ ...prev, tenantIdentifier: stored }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -63,13 +81,15 @@ const AuthLogin = () => {
       const result = await login(formData);
 
       if (result?.success) {
-        const tenant = getTenantIdentifier();
-        // Backend redirectTo may be tenant-agnostic (e.g. "/dashboard").
-        // Ensure we always land on the correct tenant subdomain.
+        // Prefer tenant from (1) input/localStorage/hostname, (2) user.tenant returned by backend
+        const tenantFromResult = result?.user?.tenant?.subdomain || result?.user?.tenant?.slug || '';
+        const tenant = getTenantIdentifier() || (tenantFromResult || '').trim();
+
         if (tenant) {
           redirectToTenantDashboard(tenant);
           return;
         }
+
         navigate(result.redirectTo);
         return;
       }
